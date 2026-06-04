@@ -1,5 +1,5 @@
-// Override ALL_EVENTOS with the complete event list for each month
-const ALL_EVENTOS = {
+﻿// Override ALL_EVENTOS with the complete event list for each month
+var ALL_EVENTOS = {
   0: [
     {e:"RAWAYANA",t:8309,p:675866,c:144790,s:33706,i:47024,tot:839207,cat:"com"},
     {e:"KANY GARCIA - 2026",t:4189,p:265745,c:28198,s:13287,i:18536,tot:317342,cat:"com"},
