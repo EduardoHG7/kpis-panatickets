@@ -1,0 +1,483 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Panatickets — Dashboard 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0b0e14;--bg2:#111520;--card:#161b27;--card2:#1c2233;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --text:#f0f2f7;--muted:#8892aa;
+  --accent:#3d8ef8;--accent2:#5ba3ff;
+  --green:#22c47a;--red:#f0484a;--amber:#f5a623;--teal:#14c8b4;--purple:#9b6dff;
+  --fd:"DM Serif Display",serif;--fb:"DM Sans",sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px;line-height:1.5;min-height:100vh}
+.shell{display:flex;min-height:100vh}
+.sidebar{width:230px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:100;overflow-y:auto}
+.main{margin-left:230px;flex:1;padding:36px 40px;max-width:1340px}
+.logo{padding:16px 16px 14px;border-bottom:1px solid var(--border);text-align:center}
+.logo img{height:44px;object-fit:contain;width:100%;max-width:160px}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.5px;text-transform:uppercase}
+.nav{padding:10px 10px;flex:1}
+.nav-group{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:12px 12px 5px;opacity:.6}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:13px;border:none;background:none;width:100%;text-align:left;transition:all .15s}
+.nav-item:hover{background:rgba(255,255,255,0.04);color:var(--text)}
+.nav-item.active{background:rgba(61,142,248,0.12);color:var(--accent2);font-weight:500}
+.nav-icon{width:15px;height:15px;opacity:.7;flex-shrink:0}
+.nav-item.active .nav-icon{opacity:1}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.section{display:none}
+.section.active{display:block;animation:fi .25s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px}
+.page-title{font-family:var(--fd);font-size:26px;letter-spacing:-.4px}
+.page-title em{font-style:italic;color:var(--accent2)}
+.page-meta{font-size:12px;color:var(--muted);margin-top:4px}
+.month-selector{display:flex;gap:5px;flex-wrap:wrap}
+.ms-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-family:var(--fb);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.ms-btn:hover{border-color:var(--border2);color:var(--text)}
+.ms-btn.active{background:rgba(61,142,248,0.15);border-color:rgba(61,142,248,0.4);color:var(--accent2)}
+.compare-bar{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.compare-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.cmp-btn{padding:4px 11px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--fb);font-size:11px;cursor:pointer;transition:all .15s}
+.cmp-btn:hover{color:var(--text);border-color:var(--border2)}
+.cmp-btn.active{background:rgba(155,109,255,0.15);border-color:rgba(155,109,255,0.4);color:var(--purple)}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:11px;margin-bottom:18px}
+.kpi-grid-4{grid-template-columns:repeat(4,1fr)}
+.kpi-grid-3{grid-template-columns:repeat(3,1fr)}
+.kpi-grid-2{grid-template-columns:repeat(2,1fr)}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi-card:hover{border-color:var(--border2)}
+.kpi-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--ac,var(--accent))}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
+.kpi-value{font-size:22px;font-weight:300;letter-spacing:-1px;line-height:1}
+.kpi-value span{font-size:12px;font-weight:400;color:var(--muted);margin-left:1px}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:5px}
+.kpi-delta{font-size:11px;margin-top:5px;font-weight:500}
+.kpi-delta.up{color:var(--green)}.kpi-delta.down{color:var(--red)}.kpi-delta.neu{color:var(--muted)}
+.kc-a{--ac:var(--accent)}.kc-g{--ac:var(--green)}.kc-r{--ac:var(--red)}.kc-t{--ac:var(--teal)}.kc-p{--ac:var(--purple)}.kc-am{--ac:var(--amber)}
+.chart-grid{display:grid;gap:16px;margin-bottom:16px}
+.cg2{grid-template-columns:1fr 1fr}.cg3{grid-template-columns:2fr 1fr}.cg32{grid-template-columns:3fr 2fr}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.cch{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.cct{font-size:13px;font-weight:500}.ccs{font-size:11px;color:var(--muted);margin-top:3px}
+.legend{display:flex;gap:12px;flex-wrap:wrap}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.ld{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.insight{background:rgba(61,142,248,0.06);border:1px solid rgba(61,142,248,0.15);border-left:3px solid var(--accent);border-radius:8px;padding:11px 14px;margin-top:12px;font-size:12px;color:var(--muted);line-height:1.7}
+.insight strong{color:var(--text);font-weight:500}
+.insight.iw{background:rgba(240,72,74,0.06);border-color:rgba(240,72,74,0.15);border-left-color:var(--red)}
+.insight.ia{background:rgba(245,166,35,0.06);border-color:rgba(245,166,35,0.15);border-left-color:var(--amber)}
+.insight.ig{background:rgba(34,196,122,0.06);border-color:rgba(34,196,122,0.15);border-left-color:var(--green)}
+.it{font-size:10px;font-weight:500;color:var(--text);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px}
+.table-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.table-header{padding:16px 20px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.tt{font-size:13px;font-weight:500}
+.search-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-family:var(--fb);font-size:12px;color:var(--text);width:200px;outline:none;transition:border-color .2s}
+.search-box:focus{border-color:var(--accent)}.search-box::placeholder{color:var(--muted)}
+.dt{width:100%;border-collapse:collapse;margin-top:12px}
+.dt th{padding:8px 20px;text-align:left;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.dt td{padding:10px 20px;font-size:12px;border-bottom:1px solid var(--border)}
+.dt tbody tr{cursor:pointer}
+.dt tbody tr:hover td{background:rgba(61,142,248,0.06)}
+.dt tbody tr:last-child td{border-bottom:none}
+.dt .rt{text-align:right}
+.tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500}
+.tag-j{background:rgba(20,200,180,0.12);color:var(--teal)}.tag-c{background:rgba(61,142,248,0.1);color:var(--accent2)}
+.rn{color:var(--muted);font-size:11px;margin-right:3px}
+.bi{display:inline-block;height:3px;border-radius:2px;background:var(--accent);vertical-align:middle;margin-left:7px;opacity:.5}
+.sbt{background:var(--bg2);border-radius:4px;height:6px;overflow:hidden}
+.sbf{height:100%;border-radius:4px}
+.prog-list{display:flex;flex-direction:column;gap:11px}
+.ph{display:flex;justify-content:space-between;margin-bottom:5px}
+.pn{font-size:12px}.pv{font-size:12px;color:var(--muted)}
+.pt{background:var(--bg2);border-radius:3px;height:5px;overflow:hidden}
+.pf{height:100%;border-radius:3px}
+.heatmap-grid{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;padding:3px 0}
+.hc{aspect-ratio:1;border-radius:3px;cursor:default;position:relative}
+.hc:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:var(--card2);color:var(--text);font-size:10px;padding:4px 8px;border-radius:6px;white-space:nowrap;border:1px solid var(--border2);z-index:10;pointer-events:none}
+.hl{display:grid;grid-template-columns:repeat(24,1fr);gap:3px}
+.hll{font-size:8px;color:var(--muted);text-align:center}
+.ann-table{width:100%;border-collapse:collapse;font-size:12px}
+.ann-table th{padding:9px 12px;text-align:right;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.ann-table th:first-child{text-align:left}
+.ann-table td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:right}
+.ann-table td:first-child{text-align:left;color:var(--muted);font-size:11px}
+.ann-table tr:hover td{background:rgba(255,255,255,0.02)}
+.ann-table tr:last-child td{border-bottom:none;font-weight:500;color:var(--text);background:rgba(61,142,248,0.05)}
+.best{color:var(--green);font-weight:500}
+.conc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ci{padding:16px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px}
+.cn{font-family:var(--fd);font-size:24px;color:var(--accent2);letter-spacing:-1px;margin-bottom:6px}
+.ctitle{font-size:13px;font-weight:500;margin-bottom:5px}
+.cbody{font-size:12px;color:var(--muted);line-height:1.7}
+.ctag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500;margin-bottom:6px}
+.ct-w{background:rgba(240,72,74,0.12);color:var(--red)}.ct-ok{background:rgba(34,196,122,0.12);color:var(--green)}
+.ct-i{background:rgba(61,142,248,0.12);color:var(--accent2)}.ct-a{background:rgba(245,166,35,0.12);color:var(--amber)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:1100px;padding:28px;position:relative;margin:auto}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 10px;line-height:1}
+.modal-close:hover{color:var(--text)}
+.modal-title{font-family:var(--fd);font-size:22px;margin-bottom:4px;padding-right:40px}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+.modal-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.modal-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.kpiPanel{position:fixed;bottom:0;left:230px;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:16px 16px 0 0;padding:20px 28px;transform:translateY(100%);transition:transform .3s ease;z-index:400;max-height:55vh;overflow-y:auto}
+</style>
+</head>
+<body><div class="shell">
+<aside class="sidebar">
+  <div class="logo">
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 50'%3E%3Crect width='200' height='50' fill='%230b0e14'/%3E%3Ctext x='100' y='35' text-anchor='middle' font-family='Arial' font-size='22' font-weight='bold' fill='%233d8ef8'%3EPanatickets%3C/text%3E%3C/svg%3E" alt="Panatickets">
+    <div class="logo-sub">Dashboard 2026</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-group">General</div>
+    <button class="nav-item active" onclick="nav('anual',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 13V6l6-4 6 4v7H2z" stroke="currentColor" stroke-width="1.3"/><rect x="5" y="9" width="2" height="4" fill="currentColor" opacity=".6"/><rect x="9" y="7" width="2" height="6" fill="currentColor"/></svg>Resumen Anual
+    </button>
+    <div class="nav-group">Por mes</div>
+    <button class="nav-item" onclick="nav('resumen',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".7"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".4"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor" opacity=".4"/></svg>Resumen del mes
+    </button>
+    <button class="nav-item" onclick="nav('eventos',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 12h2V6H2v6zm4 0h2V3H6v9zm4 0h2V8h-2v4z" fill="currentColor"/></svg>Por evento
+    </button>
+    <button class="nav-item" onclick="nav('estatus',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/><path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Vendidos vs Cancelados
+    </button>
+    <button class="nav-item" onclick="nav('tiempo',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2a6 6 0 100 12A6 6 0 008 2zM8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Comportamiento temporal
+    </button>
+    <button class="nav-item" onclick="nav('conclusiones',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Conclusiones
+    </button>
+  </nav>
+  <div class="sidebar-footer"><span class="dot"></span>Ene&ndash;May 2026 &middot; 76,936 reg.</div>
+</aside>
+<main class="main">
+<!-- ANUAL -->
+<section id="anual" class="section active">
+  <div class="page-header">
+    <div><h1 class="page-title">Resumen <em>Anual 2026</em></h1><p class="page-meta">Enero &ndash; Mayo 2026 &middot; Consolidado de 5 meses</p></div>
+  </div>
+  <div class="kpi-grid kpi-grid-4">
+    <div class="kpi-card kc-a"><div class="kpi-label">Total facturado neto (5 meses)</div><div class="kpi-value">$2.86<span>M</span></div><div class="kpi-sub">Ventas &minus; Cancelaciones</div></div>
+    <div class="kpi-card kc-g"><div class="kpi-label">Precio base neto acumulado</div><div class="kpi-value">$2.32<span>M</span></div><div class="kpi-sub">STickets neto Ene&ndash;May 2026</div></div>
+    <div class="kpi-card kc-r"><div class="kpi-label">Total cancelaciones</div><div class="kpi-value">$703<span>K</span></div><div class="kpi-sub">10,513 tickets cancelados</div></div>
+    <div class="kpi-card kc-t"><div class="kpi-label">Tickets pagados</div><div class="kpi-value">87,936</div><div class="kpi-sub">Precio &gt; $0 &middot; ventas confirmadas</div></div>
+  </div>
+  <div class="chart-grid cg2">
+    <div class="chart-card">
+      <div class="cch"><div><div class="cct">Evolucion mensual &mdash; Total facturado</div><div class="ccs">Comparativa de los 5 meses</div></div>
+        <div class="legend"><div class="li"><span class="ld" style="background:#3d8ef8"></span>Total neto</div><div class="li"><span class="ld" style="background:#22c47a"></span>Precio base</div></div>
+      </div>
+      <div style="height:220px;position:relative"><canvas id="cAnualLine"></canvas></div>
+      <div class="insight ia"><div class="it">Tendencia</div><strong>Marzo fue el mes record</strong> con $1.25M neto gracias a Rawayana. Mayo con $245K muestra el periodo post-juegos con portafolio mas diversificado.</div>
+    </div>
+    <div class="chart-card">
+      <div class="cch"><div><div class="cct">Tickets vendidos vs cancelados</div><div class="ccs">Por mes</div></div></div>
+      <div style="height:220px;position:relative"><canvas id="cAnualBar"></canvas></div>
+      <div class="insight iw"><div class="it">Alerta</div><strong>Abril registro 5,376 cancelaciones</strong> &mdash; el 51% del total del periodo. Matan Baseters y Grupo Frontera concentran la mayor parte.</div>
+    </div>
+  </div>
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="cch"><div><div class="cct">Resumen comparativo mensual</div><div class="ccs">Todos los indicadores clave</div></div></div>
+    <div style="overflow-x:auto">
+    <table class="ann-table">
+      <thead><tr><th>Indicador</th><th>Enero</th><th>Febrero</th><th>Marzo</th><th>Abril</th><th>Mayo</th><th>Total/Prom.</th></tr></thead>
+      <tbody>
+        <tr><td>Total neto facturado</td><td>$488,416</td><td>$460,930</td><td class="best">$1,253,995</td><td>$416,447</td><td>$244,841</td><td>$2,864,629</td></tr>
+        <tr><td>Precio base (STickets)</td><td>$403,794</td><td>$380,825</td><td class="best">$991,075</td><td>$340,738</td><td>$208,463</td><td>$2,324,895</td></tr>
+        <tr><td>CxS (TFee)</td><td>$46,506</td><td>$48,238</td><td class="best">$168,623</td><td>$54,388</td><td>$22,934</td><td>$340,689</td></tr>
+        <tr><td>SPAC (extFee2)</td><td>$10,955</td><td>$7,292</td><td class="best">$34,523</td><td>$2,463</td><td>$3,049</td><td>$58,282</td></tr>
+        <tr><td>ITBMS (extFee3)</td><td>$27,162</td><td>$24,575</td><td class="best">$59,773</td><td>$18,857</td><td>$10,395</td><td>$140,762</td></tr>
+        <tr><td>Valor cancelado</td><td>$12,438</td><td>$30,897</td><td>$150,620</td><td class="best">$430,908</td><td>$78,348</td><td>$703,211</td></tr>
+        <tr><td>Tickets pagados</td><td>19,764</td><td>19,440</td><td class="best">24,224</td><td>18,262</td><td>6,246</td><td>87,936</td></tr>
+        <tr><td>Tickets cancelados</td><td>785</td><td>660</td><td>2,772</td><td class="best">5,376</td><td>920</td><td>10,513</td></tr>
+        <tr><td>Tasa cancelacion %</td><td>3.8%</td><td>3.3%</td><td>10.3%</td><td class="best">22.7%</td><td>12.8%</td><td>10.6% prom.</td></tr>
+        <tr><td>Ticket promedio</td><td>$24.71</td><td>$23.71</td><td class="best">$51.77</td><td>$22.80</td><td>$39.20</td><td>$32.44 prom.</td></tr>
+        <tr><td>Boletos por orden</td><td>1.91</td><td>2.03</td><td class="best">2.54</td><td>2.18</td><td>2.36</td><td>2.20 prom.</td></tr>
+        <tr><td>Cortesias comerciales</td><td>11,302</td><td>10,862</td><td>26,954</td><td class="best">17,644</td><td>9,041</td><td>75,803</td></tr>
+        <tr><td>Cortesias IV Juegos</td><td>&mdash;</td><td>&mdash;</td><td>18,492</td><td class="best">71,325</td><td>&mdash;</td><td>89,817</td></tr>
+        <tr><td>Eventos activos</td><td>46</td><td>57</td><td class="best">110</td><td>94</td><td>54</td><td>&mdash;</td></tr>
+        <tr><td><strong>Total neto</strong></td><td><strong>$488K</strong></td><td><strong>$461K</strong></td><td><strong>$1.25M</strong></td><td><strong>$416K</strong></td><td><strong>$245K</strong></td><td><strong>$2.86M</strong></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <div class="chart-grid cg2">
+    <div class="chart-card">
+      <div class="cch"><div><div class="cct">Top metodos de pago &mdash; Acumulado anual</div><div class="ccs">Valor neto Ene&ndash;May 2026</div></div></div>
+      <div style="height:220px;position:relative"><canvas id="cAnualPago"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="cch"><div><div class="cct">Evolucion mensual por metodo de pago</div><div class="ccs">Top 5 metodos</div></div>
+        <div class="legend" id="pagoLegend"></div>
+      </div>
+      <div style="height:220px;position:relative"><canvas id="cAnualPagoLine"></canvas></div>
+    </div>
+  </div>
+</section>
+<!-- RESUMEN -->
+<section id="resumen" class="section">
+  <div class="page-header">
+    <div><h1 class="page-title">Resumen del <em>Mes</em></h1><p class="page-meta" id="rMeta">Selecciona un mes</p></div>
+    <div class="month-selector" id="rMonthSel">
+      <button class="ms-btn active" onclick="selMes('resumen',1,this)">Enero</button>
+      <button class="ms-btn" onclick="selMes('resumen',2,this)">Febrero</button>
+      <button class="ms-btn" onclick="selMes('resumen',3,this)">Marzo</button>
+      <button class="ms-btn" onclick="selMes('resumen',4,this)">Abril</button>
+      <button class="ms-btn" onclick="selMes('resumen',5,this)">Mayo</button>
+    </div>
+  </div>
+  <div class="compare-bar">
+    <span class="compare-label">Comparar con:</span>
+    <button class="cmp-btn active" id="cmp0" onclick="toggleCmp(0)">Ninguno</button>
+    <button class="cmp-btn" id="cmp1" onclick="toggleCmp(1)">Enero</button>
+    <button class="cmp-btn" id="cmp2" onclick="toggleCmp(2)">Febrero</button>
+    <button class="cmp-btn" id="cmp3" onclick="toggleCmp(3)">Marzo</button>
+    <button class="cmp-btn" id="cmp4" onclick="toggleCmp(4)">Abril</button>
+    <button class="cmp-btn" id="cmp5" onclick="toggleCmp(5)">Mayo</button>
+  </div>
+  <div id="rKpis"></div>
+  <div class="chart-grid cg3">
+    <div class="chart-card">
+      <div class="cch"><div><div class="cct">Composicion del total</div><div class="ccs">Por componente</div></div>
+        <div class="legend"><div class="li"><span class="ld" style="background:#3d8ef8"></span>Precio</div><div class="li"><span class="ld" style="background:#14c8b4"></span>CxS</div><div class="li"><span class="ld" style="background:#f5a623"></span>SPAC</div><div class="li"><span class="ld" style="background:#9b6dff"></span>ITBMS</div></div>
+      </div>
+      <div style="height:200px;position:relative"><canvas id="cRDonut"></canvas></div>
+      <div class="insight" id="rInsight1"></div>
+    </div>
+    <div class="chart-card">
+      <div class="cch"><div><div class="cct">Vendidos vs Cancelados</div></div></div>
+      <div id="rVsPanel" style="display:flex;flex-direction:column;gap:12px;margin-top:4px"></div>
+      <div class="insight iw" id="rInsight2" style="margin-top:12px"></div>
+    </div>
+  </div>
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="cch"><div><div class="cct" id="rCmpTitle">Evolucion mensual</div><div class="ccs">Total facturado</div></div></div>
+    <div style="height:190px;position:relative"><canvas id="cRCmp"></canvas></div>
+  </div>
+</section>
+<!-- EVENTOS -->
+<section id="eventos" class="section">
+  <div class="page-header">
+    <div><h1 class="page-title">Por <em>Evento</em></h1><p class="page-meta">Haz clic en un evento para ver el detalle completo</p></div>
+    <div class="month-selector" id="eMonthSel">
+      <button class="ms-btn" onclick="selMes('eventos',0,this)">General</button>
+      <button class="ms-btn active" onclick="selMes('eventos',1,this)">Enero</button>
+      <button class="ms-btn" onclick="selMes('eventos',2,this)">Febrero</button>
+      <button class="ms-btn" onclick="selMes('eventos',3,this)">Marzo</button>
+      <button class="ms-btn" onclick="selMes('eventos',4,this)">Abril</button>
+      <button class="ms-btn" onclick="selMes('eventos',5,this)">Mayo</button>
+    </div>
+  </div>
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="cch"><div><div class="cct">Top 10 eventos por venta total</div><div class="ccs" id="eChartSub">Mes seleccionado</div></div></div>
+    <div style="height:360px;position:relative"><canvas id="cETop"></canvas></div>
+    <div class="insight ia" id="eInsight"></div>
+  </div>
+  <div class="table-card">
+    <div class="table-header"><div class="tt" id="eTblTitle">Tabla de eventos</div><input class="search-box" id="eSrch" placeholder="Buscar evento&hellip;" oninput="filterEvt()"/></div>
+    <table class="dt"><thead><tr><th>#</th><th>Evento</th><th>Tipo</th><th class="rt">Tickets</th><th class="rt">Precio</th><th class="rt">CxS</th><th class="rt">SPAC</th><th class="rt">ITBMS</th><th class="rt">Total</th></tr></thead><tbody id="eBody"></tbody></table>
+  </div>
+</section>
+<!-- ESTATUS -->
+<section id="estatus" class="section">
+  <div class="page-header">
+    <div><h1 class="page-title">Vendidos <em>vs</em> Cancelados</h1></div>
+    <div class="month-selector" id="stMonthSel">
+      <button class="ms-btn active" onclick="selMes('estatus',1,this)">Enero</button>
+      <button class="ms-btn" onclick="selMes('estatus',2,this)">Febrero</button>
+      <button class="ms-btn" onclick="selMes('estatus',3,this)">Marzo</button>
+      <button class="ms-btn" onclick="selMes('estatus',4,this)">Abril</button>
+      <button class="ms-btn" onclick="selMes('estatus',5,this)">Mayo</button>
+    </div>
+  </div>
+  <div class="chart-grid cg2" style="margin-bottom:16px">
+    <div class="chart-card">
+      <div class="cch"><div><div class="cct">Top 8 cancelaciones por valor ($)</div><div class="ccs" id="stCancelSub">Mes seleccionado</div></div></div>
+      <div style="height:260px;position:relative"><canvas id="cStCancel"></canvas></div>
+      <div class="insight iw" id="stInsight1"></div>
+    </div>
+    <div class="chart-card">
+      <div class="cch"><div><div class="cct">Tasa de cancelacion por evento</div></div></div>
+      <div class="prog-list" id="stTasaList"></div>
+      <div class="insight ia" id="stInsight2" style="margin-top:12px"></div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="cch"><div><div class="cct">Vendidos vs cancelados &mdash; top 10</div><div class="ccs" id="stVsSub">Mes seleccionado</div></div>
+      <div class="legend"><div class="li"><span class="ld" style="background:#22c47a"></span>Vendidos</div><div class="li"><span class="ld" style="background:#f0484a"></span>Cancelados</div></div>
+    </div>
+    <div style="height:340px;position:relative"><canvas id="cStVs"></canvas></div>
+  </div>
+</section>
+<!-- TIEMPO -->
+<section id="tiempo" class="section">
+  <div class="page-header">
+    <div><h1 class="page-title">Comportamiento <em>Temporal</em></h1></div>
+    <div class="month-selector" id="tMonthSel">
+      <button class="ms-btn" onclick="selMes('tiempo',0,this)">General</button>
+      <button class="ms-btn active" onclick="selMes('tiempo',1,this)">Enero</button>
+      <button class="ms-btn" onclick="selMes('tiempo',2,this)">Febrero</button>
+      <button class="ms-btn" onclick="selMes('tiempo',3,this)">Marzo</button>
+      <button class="ms-btn" onclick="selMes('tiempo',4,this)">Abril</button>
+      <button class="ms-btn" onclick="selMes('tiempo',5,this)">Mayo</button>
+    </div>
+  </div>
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="cch"><div><div class="cct">Venta total por dia</div><div class="ccs" id="tDiaSub"></div></div><div class="legend"><div class="li"><span class="ld" style="background:#3d8ef8"></span>Total ($)</div></div></div>
+    <div style="height:220px;position:relative"><canvas id="cTDia"></canvas></div>
+    <div class="insight" id="tInsight1"></div>
+  </div>
+  <div class="chart-grid cg2" style="margin-bottom:16px">
+    <div class="chart-card">
+      <div class="cch"><div><div class="cct">Tickets por dia</div></div><div class="legend"><div class="li"><span class="ld" style="background:#3d8ef8"></span>Vendidos</div><div class="li"><span class="ld" style="background:#f0484a"></span>Cancelados</div></div></div>
+      <div style="height:190px;position:relative"><canvas id="cTDia2"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="cch"><div><div class="cct">Distribucion por hora</div></div></div>
+      <div style="height:190px;position:relative"><canvas id="cTHora"></canvas></div>
+      <div class="insight" id="tInsight2" style="margin-top:10px"></div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="cch"><div><div class="cct">Mapa de calor por hora</div><div class="ccs">Hover para detalle</div></div></div>
+    <div class="hl" id="tHeatLabels" style="margin-bottom:5px"></div>
+    <div class="heatmap-grid" id="tHeatGrid"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--muted)"><span>Menor actividad</span><span>Mayor actividad</span></div>
+  </div>
+</section>
+<!-- CONCLUSIONES -->
+<section id="conclusiones" class="section">
+  <div class="page-header">
+    <div><h1 class="page-title">Conclusiones <em>Ejecutivas</em></h1></div>
+    <div class="month-selector" id="cMonthSel">
+      <button class="ms-btn" onclick="selMes('conclusiones',0,this)">Anual</button>
+      <button class="ms-btn active" onclick="selMes('conclusiones',1,this)">Enero</button>
+      <button class="ms-btn" onclick="selMes('conclusiones',2,this)">Febrero</button>
+      <button class="ms-btn" onclick="selMes('conclusiones',3,this)">Marzo</button>
+      <button class="ms-btn" onclick="selMes('conclusiones',4,this)">Abril</button>
+      <button class="ms-btn" onclick="selMes('conclusiones',5,this)">Mayo</button>
+    </div>
+  </div>
+  <div id="concContent"></div>
+</section>
+</main>
+</div>
+<!-- KPI PANEL -->
+<div id="kpiPanel" style="position:fixed;bottom:0;left:230px;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:16px 16px 0 0;padding:20px 28px;transform:translateY(100%);transition:transform .3s ease;z-index:400;max-height:55vh;overflow-y:auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div><div id="kpiPanelTitle" style="font-family:'DM Serif Display',serif;font-size:18px"></div><div id="kpiPanelSub" style="font-size:11px;color:var(--muted);margin-top:2px"></div></div>
+    <button onclick="closeKpiPanel()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 10px;line-height:1">&#x2715;</button>
+  </div>
+  <table class="dt" style="margin-top:0"><thead><tr><th>#</th><th>Evento</th><th class="rt" id="kpiPanelColHdr">Valor</th><th class="rt">% del total</th></tr></thead><tbody id="kpiPanelBody"></tbody></table>
+</div>
+<div id="kpiPanelBg" onclick="closeKpiPanel()" style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:399;display:none"></div>
+<!-- EVENT MODAL -->
+<div class="modal-overlay" id="evModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+    <div class="modal-title" id="mTitle"></div>
+    <div class="modal-sub" id="mSub"></div>
+    <div class="modal-kpis" id="mKpis"></div>
+    <div class="chart-grid cg2" style="margin-bottom:14px">
+      <div class="chart-card"><div class="cch"><div><div class="cct">Venta por dia</div></div></div><div style="height:180px;position:relative"><canvas id="mCDia"></canvas></div></div>
+      <div class="chart-card"><div class="cch"><div><div class="cct">Venta por mes</div></div></div><div style="height:180px;position:relative"><canvas id="mCMes"></canvas></div></div>
+    </div>
+    <div class="chart-grid cg2">
+      <div class="chart-card"><div class="cch"><div><div class="cct">Flujo por hora</div></div></div><div style="height:170px;position:relative"><canvas id="mCHora"></canvas></div></div>
+      <div class="chart-card"><div class="cch"><div><div class="cct">Compras por dia de semana</div></div></div><div style="height:170px;position:relative"><canvas id="mCSem"></canvas></div></div>
+    </div>
+  </div>
+</div><script>
+const $=id=>document.getElementById(id);
+const fmt=v=>'$'+Number(v).toLocaleString('es-PA',{minimumFractionDigits:0,maximumFractionDigits:0});
+const fmtK=v=>v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':fmt(v);
+const fmtn=v=>Number(v).toLocaleString('es-PA');
+const GRID='rgba(255,255,255,0.05)';
+const TICK={color:'#8892aa',font:{family:'DM Sans',size:11}};
+const MES_NAMES=['','Enero','Febrero','Marzo','Abril','Mayo'];
+const MES_COLORS=['#3d8ef8','#14c8b4','#f5a623','#9b6dff','#22c47a'];
+const MONTHLY={
+  1:{precio:403794,cxs:46506,spac:10955,itbms:27162,total:488416,tvend:19764,vcVend:488416,tcan:785,vcCan:12438,cortCom:11302,cortJuegos:0,eventos:46,tprom:24.71,bprom:1.91},
+  2:{precio:380825,cxs:48238,spac:7292,itbms:24575,total:460930,tvend:19440,vcVend:460930,tcan:660,vcCan:30897,cortCom:10862,cortJuegos:0,eventos:57,tprom:23.71,bprom:2.03},
+  3:{precio:991075,cxs:168623,spac:34523,itbms:59773,total:1253995,tvend:24224,vcVend:1253995,tcan:2772,vcCan:150620,cortCom:26954,cortJuegos:18492,eventos:110,tprom:51.77,bprom:2.54},
+  4:{precio:340738,cxs:54388,spac:2463,itbms:18857,total:416447,tvend:18262,vcVend:416447,tcan:5376,vcCan:430908,cortCom:17644,cortJuegos:71325,eventos:94,tprom:22.8,bprom:2.18},
+  5:{precio:208463,cxs:22934,spac:3049,itbms:10395,total:244841,tvend:6246,vcVend:244841,tcan:920,vcCan:78348,cortCom:9041,cortJuegos:0,eventos:54,tprom:39.2,bprom:2.36}
+};const TOP_EVENTOS={
+  0:[{e:"RAWAYANA",t:8309,p:675866,c:144790,s:33706,i:47024,tot:839207,cat:"com"},{e:"KANY GARCIA 2026",t:4189,p:265745,c:28198,s:13287,i:18536,tot:317342,cat:"com"},{e:"FUTTURA TINI",t:1816,p:230025,c:24940,s:11501,i:16102,tot:272839,cat:"com"},{e:"MICRO BREW FEST 2026",t:9388,p:150048,c:20873,s:0,i:10492,tot:181145,cat:"com"},{e:"ROCK OF AGES ALL NIGHT LONG",t:4957,p:151654,c:20327,s:0,i:10614,tot:170452,cat:"com"},{e:"MACRO FEST 2026",t:3485,p:120017,c:7839,s:5022,i:8397,tot:140614,cat:"com"},{e:"SANDRA FEST INSUPERABLE",t:4933,p:63572,c:5755,s:856,i:3208,tot:72826,cat:"com"},{e:"GREASE THE MUSICAL 2026",t:1781,p:70225,c:5944,s:0,i:0,tot:67998,cat:"com"},{e:"EL LAGO DE LOS CISNES",t:1952,p:58550,c:6565,s:0,i:0,tot:65048,cat:"com"},{e:"SABOR PANAMA",t:5931,p:48866,c:6121,s:86,i:3416,tot:56909,cat:"com"},{e:"IV JUEGOS SURAMERICANOS",t:89817,p:0,c:0,s:0,i:0,tot:0,cat:"juegos"}],
+  1:[{e:"KANY GARCIA 2026",t:872,p:88530,c:7749,s:4426,i:6183,tot:102629,cat:"com"},{e:"MICRO BREW FEST 2026",t:5122,p:74667,c:10500,s:0,i:5219,tot:90332,cat:"com"},{e:"GRUPO FRONTERA TOUR",t:440,p:62020,c:8010,s:3101,i:4341,tot:77473,cat:"com"},{e:"MACRO FEST 2026",t:1179,p:36433,c:2824,s:1822,i:2550,tot:43449,cat:"com"},{e:"PANAMA JAZZ FESTIVAL 2026",t:1975,p:22168,c:3811,s:1108,i:1552,tot:28446,cat:"com"},{e:"JOY ONE ICE MULTIPLAZA",t:2930,p:20458,c:1934,s:0,i:1429,tot:23719,cat:"com"},{e:"EL REINO DEL CASCANUECES",t:2831,p:19700,c:1867,s:0,i:1379,tot:22921,cat:"com"},{e:"MATAN BASETER",t:92,p:14870,c:1286,s:744,i:1041,tot:16634,cat:"com"},{e:"GALA FOLKLORICA PANAMA",t:905,p:11995,c:1581,s:0,i:0,tot:13162,cat:"com"},{e:"CARRERA INTERNACIONAL FEB",t:2553,p:9692,c:1424,s:0,i:678,tot:11736,cat:"com"}],
+  2:[{e:"MICRO BREW FEST 2026",t:4266,p:75380,c:10373,s:0,i:5273,tot:90813,cat:"com"},{e:"SEBASTIAN YATRA 2026",t:394,p:47170,c:4008,s:2358,i:3302,tot:56620,cat:"com"},{e:"SABOR PANAMA",t:5869,p:47946,c:5977,s:86,i:3352,tot:55781,cat:"com"},{e:"MATAN BASETER",t:265,p:45547,c:3246,s:1940,i:2716,tot:52723,cat:"com"},{e:"WORLD CUP QUALIFIERS 2026",t:3354,p:24798,c:6975,s:0,i:1736,tot:32942,cat:"com"},{e:"EL REINO DEL CASCANUECES",t:3033,p:21152,c:2003,s:0,i:1480,tot:24627,cat:"com"},{e:"KANY GARCIA 2026",t:233,p:19080,c:2091,s:954,i:1336,tot:23387,cat:"com"},{e:"GRUPO FRONTERA TOUR",t:135,p:16450,c:2132,s:822,i:1152,tot:20556,cat:"com"},{e:"MACRO FEST 2026",t:414,p:16735,c:1072,s:837,i:1172,tot:19816,cat:"com"},{e:"SUMMER SKATE MULTIPLAZA",t:2383,p:16678,c:1573,s:0,i:1165,tot:19416,cat:"com"}],
+  3:[{e:"RAWAYANA",t:6990,p:607508,c:130531,s:30371,i:42400,tot:765469,cat:"com"},{e:"MACRO FEST 2026",t:1892,p:66849,c:3943,s:2364,i:4675,tot:77349,cat:"com"},{e:"GREASE THE MUSICAL 2026",t:1779,p:70145,c:5937,s:0,i:0,tot:68094,cat:"com"},{e:"FERIAS CCIAP 2026",t:2209,p:46801,c:5838,s:0,i:3275,tot:52294,cat:"com"},{e:"EL LAGO DE LOS CISNES",t:1510,p:44785,c:5123,s:0,i:0,tot:49841,cat:"com"},{e:"KANY GARCIA 2026",t:328,p:26680,c:2975,s:1334,i:1868,tot:32253,cat:"com"},{e:"CIRCUS MARKET 2026",t:2281,p:22967,c:3724,s:1131,i:1579,tot:29371,cat:"com"},{e:"GRAN PREMIO PANAMA MARZO",t:2421,p:24929,c:2724,s:0,i:1745,tot:28570,cat:"com"},{e:"FANTASIA PANAMENA",t:804,p:23935,c:2000,s:1209,i:1664,tot:28084,cat:"com"},{e:"ROCK OF AGES ALL NIGHT LONG",t:584,p:24891,c:3359,s:0,i:1742,tot:28009,cat:"com"},{e:"IV JUEGOS SURAMERICANOS",t:18492,p:0,c:0,s:0,i:0,tot:0,cat:"juegos"}],
+  4:[{e:"FUTTURA TINI",t:1732,p:220380,c:23890,s:11019,i:15427,tot:263614,cat:"com"},{e:"ROCK OF AGES ALL NIGHT LONG",t:4109,p:111949,c:15110,s:0,i:7835,tot:124734,cat:"com"},{e:"KANY GARCIA 2026",t:1284,p:60815,c:6960,s:3041,i:4257,tot:75072,cat:"com"},{e:"RAWAYANA",t:946,p:47817,c:10265,s:2387,i:3297,tot:50459,cat:"com"},{e:"SANDRA FEST INSUPERABLE",t:3678,p:40714,c:3937,s:148,i:2217,tot:46556,cat:"com"},{e:"BALBOA ACADEMY SHREK",t:517,p:15662,c:2278,s:0,i:0,tot:17734,cat:"com"},{e:"BUNNY VENTURE METROMALL",t:2172,p:13916,c:1714,s:0,i:985,tot:16569,cat:"com"},{e:"EL CORSARIO",t:1716,p:13250,c:1392,s:0,i:0,tot:14380,cat:"com"},{e:"ANNIE EL MUSICAL",t:2904,p:14070,c:1676,s:0,i:0,tot:13997,cat:"com"},{e:"ALLAN WATSON JACKSON LEGACY",t:510,p:11677,c:921,s:584,i:817,tot:13907,cat:"com"},{e:"IV JUEGOS SURAMERICANOS",t:71325,p:0,c:0,s:0,i:0,tot:0,cat:"juegos"}],
+  5:[{e:"KANY GARCIA 2026",t:1472,p:70640,c:8422,s:3532,i:4892,tot:84000,cat:"com"},{e:"SON MISERABLES",t:692,p:41730,c:2293,s:0,i:2921,tot:46386,cat:"com"},{e:"ANNIE EL MUSICAL",t:1775,p:35155,c:4305,s:0,i:0,tot:38991,cat:"com"},{e:"RAWAYANA",t:373,p:20542,c:3994,s:948,i:1327,tot:23278,cat:"com"},{e:"EL CORSARIO",t:3806,p:22650,c:2464,s:0,i:0,tot:20369,cat:"com"},{e:"CUMBIA HOUSE PANAMA",t:597,p:12995,c:1417,s:650,i:910,tot:15504,cat:"com"},{e:"CHRISTINE D CLAIRO KAIRO",t:286,p:9090,c:1439,s:0,i:636,tot:11166,cat:"com"},{e:"FOUNDERS CLUB SUMMIT",t:162,p:9610,c:449,s:0,i:673,tot:10732,cat:"com"},{e:"FUTTURA TINI",t:84,p:9645,c:1050,s:482,i:675,tot:9225,cat:"com"},{e:"500 KM PANAMA",t:221,p:4736,c:339,s:0,i:332,tot:5406,cat:"com"}]
+};
+const ALL_EVENTOS=TOP_EVENTOS;const VS_DATA={
+  1:[{e:"KANY GARCIA 2026",vend:106889,vcan:4260},{e:"MICRO BREW FEST",vend:90387,vcan:54},{e:"GRUPO FRONTERA",vend:77473,vcan:0},{e:"MACRO FEST",vend:43629,vcan:180},{e:"PANAMA JAZZ",vend:28640,vcan:193},{e:"JOY ONE ICE",vend:23820,vcan:102},{e:"EL REINO CASCANUECES",vend:22946,vcan:24},{e:"MATAN BASETER",vend:17940,vcan:1306},{e:"GALA FOLKLORICA",vend:13576,vcan:414},{e:"CARRERA INTERN.",vend:11794,vcan:58}],
+  2:[{e:"MICRO BREW FEST",vend:91026,vcan:213},{e:"SABOR PANAMA",vend:57361,vcan:1580},{e:"SEBASTIAN YATRA",vend:56838,vcan:218},{e:"MATAN BASETER",vend:53448,vcan:726},{e:"WORLD CUP QUALIFIERS",vend:33508,vcan:566},{e:"EL REINO CASCANUECES",vend:24635,vcan:8},{e:"KANY GARCIA",vend:23461,vcan:74},{e:"GRUPO FRONTERA",vend:20556,vcan:0},{e:"MACRO FEST",vend:19816,vcan:0},{e:"SUMMER SKATE",vend:19416,vcan:0}],
+  3:[{e:"RAWAYANA",vend:810809,vcan:45341},{e:"MACRO FEST",vend:77830,vcan:481},{e:"GREASE THE MUSICAL",vend:76082,vcan:7988},{e:"FERIAS CCIAP",vend:55914,vcan:3620},{e:"EL LAGO CISNES",vend:49908,vcan:67},{e:"KANY GARCIA",vend:32857,vcan:604},{e:"ROCK OF AGES",vend:29992,vcan:1983},{e:"CIRCUS MARKET",vend:29402,vcan:31},{e:"GRAN PREMIO PANAMA",vend:29398,vcan:828},{e:"FANTASIA PANAMENA",vend:28809,vcan:725}],
+  4:[{e:"FUTTURA TINI",vend:270716,vcan:7102},{e:"ROCK OF AGES",vend:134894,vcan:10160},{e:"KANY GARCIA",vend:75072,vcan:0},{e:"RAWAYANA",vend:63766,vcan:13306},{e:"SANDRA FEST",vend:47016,vcan:460},{e:"GRUPO FRONTERA",vend:38271,vcan:97448},{e:"BALBOA ACADEMY",vend:17940,vcan:206},{e:"BUNNY VENTURE",vend:16616,vcan:46},{e:"ANNIE EL MUSICAL",vend:15746,vcan:1750},{e:"EL CORSARIO",vend:14642,vcan:262}],
+  5:[{e:"KANY GARCIA",vend:87487,vcan:3486},{e:"SON MISERABLES",vend:46944,vcan:558},{e:"ANNIE EL MUSICAL",vend:39460,vcan:469},{e:"RAWAYANA",vend:26811,vcan:3533},{e:"EL CORSARIO",vend:25114,vcan:4746},{e:"CUMBIA HOUSE",vend:15972,vcan:468},{e:"FUTTURA TINI",vend:11852,vcan:2627},{e:"CHRISTINE D CLAIRO",vend:11166,vcan:0},{e:"FOUNDERS CLUB",vend:10732,vcan:0},{e:"500 KM PANAMA",vend:5406,vcan:0}]
+};
+const CANCEL_DATA={
+  1:[{e:"KANY GARCIA",tcan:28,vcan:4260},{e:"NUTRILLERMO",tcan:77,vcan:2980},{e:"MATAN BASETER",tcan:9,vcan:1306},{e:"THE GIPSY",tcan:10,vcan:1216},{e:"LUNA LLENA TAMBORES",tcan:148,vcan:807},{e:"GALA FOLKLORICA",tcan:63,vcan:414},{e:"CUMPLEANOS DANILO PEREZ",tcan:3,vcan:381},{e:"PANAMA JAZZ",tcan:75,vcan:193}],
+  2:[{e:"NATIONS PANAMA NASCAR",tcan:287,vcan:25500},{e:"SABOR PANAMA",tcan:69,vcan:1580},{e:"THE GIPSY",tcan:7,vcan:966},{e:"MATAN BASETER",tcan:5,vcan:726},{e:"WORLD CUP QUALIFIERS",tcan:100,vcan:566},{e:"EL CLUB DIVORCIADAS",tcan:27,vcan:325},{e:"SEBASTIAN YATRA",tcan:2,vcan:218},{e:"MICRO BREW FEST",tcan:11,vcan:213}],
+  3:[{e:"MATAN BASETER",tcan:353,vcan:82385},{e:"RAWAYANA",tcan:309,vcan:45341},{e:"GREASE THE MUSICAL",tcan:192,vcan:7988},{e:"FERIAS CCIAP",tcan:159,vcan:3620},{e:"JEANK CENTENO RONALD URBINA",tcan:22,vcan:2680},{e:"ROCK OF AGES",tcan:90,vcan:1983},{e:"NATIONS PANAMA NASCAR",tcan:15,vcan:959},{e:"GRAN PREMIO PANAMA MARZO",tcan:113,vcan:828}],
+  4:[{e:"MATAN BASETER",tcan:1061,vcan:223075},{e:"GRUPO FRONTERA",tcan:591,vcan:97448},{e:"SEBASTIAN YATRA",tcan:530,vcan:74111},{e:"RAWAYANA",tcan:65,vcan:13306},{e:"ROCK OF AGES",tcan:346,vcan:10160},{e:"FUTTURA TINI",tcan:37,vcan:7102},{e:"ANNIE EL MUSICAL",tcan:36,vcan:1750},{e:"OTROS",tcan:9,vcan:1198}],
+  5:[{e:"GRUPO FRONTERA",tcan:451,vcan:62102},{e:"EL CORSARIO",tcan:140,vcan:4746},{e:"RAWAYANA",tcan:35,vcan:3533},{e:"KANY GARCIA",tcan:45,vcan:3486},{e:"FUTTURA TINI",tcan:12,vcan:2627},{e:"SON MISERABLES",tcan:9,vcan:558},{e:"ANNIE EL MUSICAL",tcan:101,vcan:469},{e:"CUMBIA HOUSE",tcan:40,vcan:468}]
+};
+const TASA_DATA={
+  1:[{e:"MATAN BASETER",rate:8.9,color:"#f5a623"},{e:"LUNA LLENA TAMBORES",rate:7.2,color:"#3d8ef8"},{e:"GALA FOLKLORICA",rate:6.5,color:"#3d8ef8"},{e:"GUERRERAS K-POP",rate:5.3,color:"#3d8ef8"},{e:"PANAMA JAZZ",rate:3.7,color:"#22c47a"},{e:"KANY GARCIA",rate:3.1,color:"#22c47a"},{e:"MACRO FEST",rate:0.7,color:"#22c47a"},{e:"MICRO BREW FEST",rate:0.3,color:"#22c47a"}],
+  2:[{e:"NATIONS PANAMA NASCAR",rate:7.9,color:"#f0484a"},{e:"WORLD CUP QUALIFIERS",rate:2.9,color:"#3d8ef8"},{e:"SABOR PANAMA",rate:1.2,color:"#22c47a"},{e:"MATAN BASETER",rate:1.8,color:"#3d8ef8"},{e:"MICRO BREW FEST",rate:0.3,color:"#22c47a"},{e:"EL REINO CASCANUECES",rate:0.0,color:"#22c47a"},{e:"MACRO FEST",rate:0.0,color:"#22c47a"},{e:"GRUPO FRONTERA",rate:0.0,color:"#22c47a"}],
+  3:[{e:"MATAN BASETER",rate:82.5,color:"#f0484a"},{e:"RAWAYANA",rate:4.2,color:"#3d8ef8"},{e:"GREASE THE MUSICAL",rate:9.7,color:"#f5a623"},{e:"FERIAS CCIAP",rate:6.7,color:"#3d8ef8"},{e:"ROCK OF AGES",rate:13.3,color:"#f5a623"},{e:"GRAN PREMIO PANAMA",rate:4.4,color:"#3d8ef8"},{e:"MACRO FEST",rate:0.2,color:"#22c47a"},{e:"CIRCUS MARKET",rate:0.2,color:"#22c47a"}],
+  4:[{e:"SEBASTIAN YATRA",rate:94.3,color:"#f0484a"},{e:"GRUPO FRONTERA",rate:38.1,color:"#f0484a"},{e:"ROCK OF AGES",rate:7.8,color:"#3d8ef8"},{e:"RAWAYANA",rate:6.4,color:"#3d8ef8"},{e:"FUTTURA TINI",rate:2.1,color:"#22c47a"},{e:"ANNIE EL MUSICAL",rate:1.2,color:"#22c47a"},{e:"SANDRA FEST",rate:1.3,color:"#22c47a"},{e:"KANY GARCIA",rate:0.0,color:"#22c47a"}],
+  5:[{e:"GRUPO FRONTERA",rate:100.0,color:"#f0484a"},{e:"FUTTURA TINI",rate:12.5,color:"#f5a623"},{e:"RAWAYANA",rate:8.6,color:"#f5a623"},{e:"EL CORSARIO",rate:3.5,color:"#3d8ef8"},{e:"KANY GARCIA",rate:3.0,color:"#22c47a"},{e:"ANNIE EL MUSICAL",rate:5.4,color:"#3d8ef8"},{e:"CUMBIA HOUSE",rate:6.3,color:"#3d8ef8"},{e:"SON MISERABLES",rate:1.3,color:"#22c47a"}]
+};const BY_DIA={
+  1:[{d:1,t:373,tot:3927,can:0,vend:373},{d:2,t:1192,tot:8200,can:0,vend:1192},{d:3,t:1027,tot:9406,can:9,vend:1027},{d:4,t:1842,tot:13472,can:146,vend:1842},{d:5,t:647,tot:10950,can:10,vend:647},{d:6,t:616,tot:8152,can:0,vend:616},{d:7,t:1279,tot:16834,can:12,vend:1279},{d:8,t:1305,tot:9804,can:4,vend:1305},{d:9,t:671,tot:7651,can:3,vend:671},{d:10,t:631,tot:9156,can:0,vend:631},{d:11,t:504,tot:8708,can:5,vend:504},{d:12,t:468,tot:11737,can:0,vend:468},{d:13,t:1455,tot:11675,can:69,vend:1455},{d:14,t:735,tot:14355,can:20,vend:735},{d:15,t:1457,tot:15618,can:71,vend:1457},{d:16,t:1122,tot:68929,can:20,vend:1122},{d:17,t:775,tot:19879,can:0,vend:775},{d:18,t:566,tot:10816,can:0,vend:566},{d:19,t:1523,tot:13428,can:10,vend:1523},{d:20,t:1331,tot:59030,can:174,vend:1331},{d:21,t:2170,tot:14659,can:11,vend:2170},{d:22,t:1811,tot:12634,can:56,vend:1811},{d:23,t:665,tot:13521,can:7,vend:665},{d:24,t:664,tot:10733,can:2,vend:664},{d:25,t:554,tot:11376,can:2,vend:554},{d:26,t:815,tot:15723,can:15,vend:815},{d:27,t:796,tot:10859,can:8,vend:796},{d:28,t:607,tot:15858,can:2,vend:607},{d:29,t:904,tot:13369,can:65,vend:904},{d:30,t:1393,tot:20034,can:48,vend:1393},{d:31,t:1168,tot:17924,can:16,vend:1168}],
+  2:[{d:1,t:1730,tot:19501,can:40,vend:1730},{d:2,t:1309,tot:46453,can:9,vend:1309},{d:3,t:856,tot:23456,can:12,vend:856},{d:4,t:1335,tot:26856,can:0,vend:1335},{d:5,t:1442,tot:22278,can:27,vend:1442},{d:6,t:1172,tot:27787,can:27,vend:1172},{d:7,t:1096,tot:29124,can:4,vend:1096},{d:8,t:381,tot:7958,can:0,vend:381},{d:9,t:218,tot:10245,can:0,vend:218},{d:10,t:693,tot:21956,can:11,vend:693},{d:11,t:556,tot:11416,can:1,vend:556},{d:12,t:313,tot:11950,can:1,vend:313},{d:13,t:354,tot:10024,can:0,vend:354},{d:14,t:389,tot:6513,can:0,vend:389},{d:15,t:364,tot:6965,can:0,vend:364},{d:16,t:296,tot:4989,can:0,vend:296},{d:17,t:305,tot:6695,can:0,vend:305},{d:18,t:264,tot:6084,can:0,vend:264},{d:19,t:349,tot:5284,can:15,vend:349},{d:20,t:1180,tot:9162,can:3,vend:1180},{d:21,t:629,tot:8879,can:0,vend:629},{d:22,t:724,tot:11272,can:14,vend:724},{d:23,t:2834,tot:10536,can:60,vend:2834},{d:24,t:1055,tot:15081,can:29,vend:1055},{d:25,t:1861,tot:243,can:261,vend:1861},{d:26,t:3029,tot:20651,can:3,vend:3029},{d:27,t:3309,tot:41432,can:131,vend:3309},{d:28,t:2280,tot:38141,can:12,vend:2280}],
+  3:[{d:1,t:611,tot:18465,can:21,vend:611},{d:2,t:1046,tot:25176,can:104,vend:1046},{d:3,t:2296,tot:16157,can:6,vend:2296},{d:4,t:1712,tot:11846,can:14,vend:1712},{d:5,t:4821,tot:28689,can:29,vend:4821},{d:6,t:2592,tot:17686,can:10,vend:2592},{d:7,t:1259,tot:13465,can:0,vend:1259},{d:8,t:3346,tot:18975,can:21,vend:3346},{d:9,t:1388,tot:20335,can:4,vend:1388},{d:10,t:1643,tot:27559,can:55,vend:1643},{d:11,t:2026,tot:36671,can:37,vend:2026},{d:12,t:1733,tot:25375,can:106,vend:1733},{d:13,t:915,tot:17700,can:10,vend:915},{d:14,t:1554,tot:17579,can:0,vend:1554},{d:15,t:801,tot:18058,can:11,vend:801},{d:16,t:1927,tot:21752,can:90,vend:1927},{d:17,t:1461,tot:28244,can:76,vend:1461},{d:18,t:1804,tot:15523,can:94,vend:1804},{d:19,t:1351,tot:25739,can:40,vend:1351},{d:20,t:1543,tot:27113,can:89,vend:1543},{d:21,t:2042,tot:37239,can:39,vend:2042},{d:22,t:1457,tot:24114,can:5,vend:1457},{d:23,t:1363,tot:11247,can:62,vend:1363},{d:24,t:9552,tot:480370,can:53,vend:9552},{d:25,t:5002,tot:73505,can:1000,vend:5002},{d:26,t:1596,tot:13416,can:127,vend:1596},{d:27,t:3385,tot:25236,can:227,vend:3385},{d:28,t:2497,tot:130341,can:75,vend:2497},{d:29,t:2149,tot:23092,can:76,vend:2149},{d:30,t:3320,tot:12610,can:47,vend:3320},{d:31,t:1481,tot:-9283,can:244,vend:1481}],
+  4:[{d:1,t:5537,tot:22706,can:4,vend:5537},{d:2,t:1747,tot:7383,can:1,vend:1747},{d:3,t:1015,tot:7669,can:0,vend:1015},{d:4,t:1282,tot:8527,can:4,vend:1282},{d:5,t:1642,tot:9236,can:0,vend:1642},{d:6,t:2084,tot:-132169,can:688,vend:2084},{d:7,t:3493,tot:-41588,can:344,vend:3493},{d:8,t:5248,tot:18035,can:44,vend:5248},{d:9,t:3568,tot:21826,can:131,vend:3568},{d:10,t:7720,tot:30728,can:81,vend:7720},{d:11,t:5384,tot:44183,can:14,vend:5384},{d:12,t:4724,tot:17783,can:17,vend:4724},{d:13,t:5207,tot:10441,can:85,vend:5207},{d:14,t:4392,tot:10155,can:164,vend:4392},{d:15,t:4285,tot:30939,can:28,vend:4285},{d:16,t:9356,tot:27953,can:27,vend:9356},{d:17,t:6083,tot:-20818,can:390,vend:6083},{d:18,t:5354,tot:21555,can:45,vend:5354},{d:19,t:3389,tot:19762,can:7,vend:3389},{d:20,t:1904,tot:8051,can:109,vend:1904},{d:21,t:3098,tot:11707,can:88,vend:3098},{d:22,t:3368,tot:190297,can:452,vend:3368},{d:23,t:7774,tot:28220,can:1868,vend:7774},{d:24,t:4008,tot:-15527,can:361,vend:4008},{d:25,t:1978,tot:61070,can:20,vend:1978},{d:26,t:539,tot:15964,can:2,vend:539},{d:27,t:265,tot:-7109,can:133,vend:265},{d:28,t:667,tot:-55,can:87,vend:667},{d:29,t:406,tot:-11942,can:159,vend:406},{d:30,t:1770,tot:21467,can:23,vend:1770}],
+  5:[{d:1,t:417,tot:13388,can:0,vend:417},{d:2,t:365,tot:13432,can:0,vend:365},{d:3,t:360,tot:9942,can:0,vend:360},{d:4,t:1230,tot:-3401,can:212,vend:1230},{d:5,t:1388,tot:17396,can:56,vend:1388},{d:6,t:1059,tot:15896,can:81,vend:1059},{d:7,t:1594,tot:324,can:240,vend:1594},{d:8,t:2091,tot:18761,can:47,vend:2091},{d:9,t:1522,tot:53760,can:2,vend:1522},{d:10,t:450,tot:17494,can:0,vend:450},{d:11,t:1941,tot:10372,can:161,vend:1941},{d:12,t:935,tot:23729,can:16,vend:935},{d:13,t:720,tot:27030,can:26,vend:720},{d:14,t:1215,tot:26718,can:79,vend:1215}]
+};
+const BY_HORA={
+  1:[{h:0,t:55,tot:1847},{h:1,t:30,tot:1934},{h:2,t:13,tot:354},{h:3,t:13,tot:850},{h:4,t:24,tot:617},{h:5,t:50,tot:1161},{h:6,t:150,tot:4574},{h:7,t:399,tot:10708},{h:8,t:956,tot:21505},{h:9,t:2439,tot:31979},{h:10,t:2339,tot:57039},{h:11,t:1928,tot:38738},{h:12,t:2456,tot:39212},{h:13,t:2741,tot:40182},{h:14,t:4502,tot:35725},{h:15,t:3219,tot:42581},{h:16,t:3226,tot:32928},{h:17,t:2036,tot:28455},{h:18,t:1598,tot:27199},{h:19,t:1136,tot:24664},{h:20,t:722,tot:26711},{h:21,t:556,tot:16007},{h:22,t:332,tot:10727},{h:23,t:146,tot:5157}],
+  2:[{h:0,t:93,tot:1615},{h:1,t:20,tot:965},{h:2,t:18,tot:1208},{h:3,t:14,tot:802},{h:4,t:12,tot:303},{h:5,t:66,tot:1992},{h:6,t:170,tot:4648},{h:7,t:273,tot:9411},{h:8,t:487,tot:16047},{h:9,t:2010,tot:23956},{h:10,t:2252,tot:24830},{h:11,t:2137,tot:43179},{h:12,t:2528,tot:37343},{h:13,t:2042,tot:30408},{h:14,t:4021,tot:37392},{h:15,t:3177,tot:56557},{h:16,t:3164,tot:41560},{h:17,t:2661,tot:37381},{h:18,t:1880,tot:37380},{h:19,t:1409,tot:27909},{h:20,t:957,tot:22673},{h:21,t:584,tot:19955},{h:22,t:238,tot:8453},{h:23,t:110,tot:5860}],
+  3:[{h:0,t:81,tot:1287},{h:1,t:55,tot:1212},{h:2,t:36,tot:1335},{h:3,t:28,tot:2717},{h:4,t:122,tot:2503},{h:5,t:276,tot:6991},{h:6,t:592,tot:14272},{h:7,t:1156,tot:26713},{h:8,t:2372,tot:48048},{h:9,t:6337,tot:68342},{h:10,t:6625,tot:59414},{h:11,t:5999,tot:61709},{h:12,t:5819,tot:60156},{h:13,t:7306,tot:66511},{h:14,t:5250,tot:68964},{h:15,t:6610,tot:160967},{h:16,t:5018,tot:99092},{h:17,t:4589,tot:186856},{h:18,t:3048,tot:191210},{h:19,t:2294,tot:105445},{h:20,t:2483,tot:80040},{h:21,t:1920,tot:52491},{h:22,t:1265,tot:26541},{h:23,t:392,tot:11802}],
+  4:[{h:0,t:396,tot:5013},{h:1,t:173,tot:871},{h:2,t:121,tot:619},{h:3,t:126,tot:639},{h:4,t:333,tot:1980},{h:5,t:694,tot:3380},{h:6,t:1559,tot:7675},{h:7,t:2813,tot:18814},{h:8,t:5358,tot:26447},{h:9,t:7395,tot:42880},{h:10,t:9840,tot:58859},{h:11,t:9098,tot:182700},{h:12,t:9058,tot:50797},{h:13,t:7453,tot:49925},{h:14,t:6952,tot:55053},{h:15,t:9337,tot:54735},{h:16,t:7965,tot:48834},{h:17,t:6306,tot:45149},{h:18,t:5842,tot:47408},{h:19,t:5078,tot:52702},{h:20,t:4011,tot:35944},{h:21,t:3703,tot:33551},{h:22,t:2617,tot:16662},{h:23,t:1059,tot:6717}],
+  5:[{h:0,t:41,tot:1593},{h:1,t:5,tot:260},{h:2,t:11,tot:543},{h:3,t:10,tot:530},{h:4,t:21,tot:958},{h:5,t:59,tot:2317},{h:6,t:127,tot:5100},{h:7,t:302,tot:10473},{h:8,t:602,tot:14250},{h:9,t:899,tot:22166},{h:10,t:855,tot:19620},{h:11,t:1461,tot:50150},{h:12,t:1755,tot:28172},{h:13,t:1077,tot:21592},{h:14,t:1228,tot:22868},{h:15,t:1386,tot:19045},{h:16,t:1329,tot:14993},{h:17,t:1812,tot:16411},{h:18,t:650,tot:17533},{h:19,t:552,tot:15965},{h:20,t:555,tot:15373},{h:21,t:278,tot:13370},{h:22,t:181,tot:6575},{h:23,t:91,tot:3329}]
+};
+const PAGO_LABELS=["Otros","Tarjeta Visa","Taquilla","Tarjeta Credito","Web User","Tarjeta Mastercard","Efectivo","Yappy","Tarjeta Debito","Yappy Web"];
+const PAGO_DATA=[2258635,160198,123047,103431,48218,47320,37817,35610,19978,4453];
+const PAGO_COLORS=["#3d8ef8","#5ba3ff","#14c8b4","#9b6dff","#22c47a","#f5a623","#f0484a","#e0869a","#a78bfa","#34d399"];
+const PAGO_POR_MES={labels:["Enero","Febrero","Marzo","Abril","Mayo"],datasets:[{label:"Otros",data:[390880,356452,974451,339024,197828],borderColor:"#3d8ef8"},{label:"Tarjeta Visa",data:[39660,32321,73592,5468,9157],borderColor:"#5ba3ff"},{label:"Taquilla",data:[7076,23088,72520,18345,2018],borderColor:"#14c8b4"},{label:"Tarjeta Credito",data:[1244,17380,55903,12296,16608],borderColor:"#9b6dff"},{label:"Web User",data:[5529,1437,28709,7195,5349],borderColor:"#22c47a"}]};
+const KPI_DRILLDOWN={
+  0:{total:[{e:"RAWAYANA",v:839207},{e:"KANY GARCIA",v:317342},{e:"FUTTURA TINI",v:272839},{e:"MICRO BREW FEST",v:181145},{e:"ROCK OF AGES",v:170452},{e:"MACRO FEST",v:140614},{e:"SANDRA FEST",v:72826},{e:"GREASE THE MUSICAL",v:67998},{e:"EL LAGO CISNES",v:65048},{e:"SABOR PANAMA",v:56909}],precio:[{e:"RAWAYANA",v:629558},{e:"KANY GARCIA",v:258965},{e:"FUTTURA TINI",v:222150},{e:"MICRO BREW FEST",v:149826},{e:"ROCK OF AGES",v:141528},{e:"MACRO FEST",v:119457},{e:"SANDRA FEST",v:63101},{e:"GREASE THE MUSICAL",v:62685},{e:"EL LAGO CISNES",v:58490},{e:"ANNIE EL MUSICAL",v:48685}],tvend:[{e:"MICRO BREW FEST",v:9388},{e:"RAWAYANA",v:8309},{e:"EL REINO CASCANUECES",v:6936},{e:"SABOR PANAMA",v:5931},{e:"ROCK OF AGES",v:4957},{e:"SANDRA FEST",v:4933},{e:"ANNIE EL MUSICAL",v:4720},{e:"KANY GARCIA",v:4189},{e:"FERIAS CCIAP",v:2260},{e:"GRAN PREMIO PANAMA",v:2819}],tcan:[{e:"MATAN BASETER",v:1428},{e:"GRUPO FRONTERA",v:1043},{e:"SEBASTIAN YATRA",v:532},{e:"ROCK OF AGES",v:436},{e:"RAWAYANA",v:409},{e:"GREASE THE MUSICAL",v:196},{e:"FERIAS CCIAP",v:159},{e:"ASI NOS CRIARON",v:153},{e:"LUNA LLENA TAMBORES",v:148},{e:"WORLD CUP QUALIFIERS",v:140}],cort:[{e:"ANNIE EL MUSICAL",v:3334},{e:"SABOR PANAMA",v:3153},{e:"ROCK OF AGES",v:2507},{e:"SANDRA FEST",v:2031},{e:"CARRERA INTERN.",v:2005},{e:"EL CORSARIO",v:4721},{e:"LUNA LLENA TAMBORES",v:1729},{e:"FERIAS CCIAP INVITADOS",v:1165},{e:"MACRO FEST CORTESIAS",v:3696},{e:"LUNA LLENA TAMBORES FEB",v:2237}],cort_j:[{e:"IV Juegos Suramericanos",v:89817}]},
+  1:{total:[{e:"KANY GARCIA",v:102629},{e:"MICRO BREW FEST",v:90332},{e:"GRUPO FRONTERA",v:77473},{e:"MACRO FEST",v:43449},{e:"PANAMA JAZZ",v:28446},{e:"JOY ONE ICE",v:23719},{e:"EL REINO CASCANUECES",v:22921},{e:"MATAN BASETER",v:16634},{e:"GALA FOLKLORICA",v:13162},{e:"CARRERA INTERN.",v:11736}],precio:[{e:"KANY GARCIA",v:85080},{e:"MICRO BREW FEST",v:74622},{e:"GRUPO FRONTERA",v:62020},{e:"MACRO FEST",v:36283},{e:"PANAMA JAZZ",v:22018},{e:"JOY ONE ICE",v:20370},{e:"EL REINO CASCANUECES",v:19679},{e:"MATAN BASETER",v:13790},{e:"GALA FOLKLORICA",v:11630},{e:"CARRERA INTERN.",v:9642}],tvend:[{e:"MICRO BREW FEST",v:5122},{e:"JOY ONE ICE",v:2930},{e:"EL REINO CASCANUECES",v:2831},{e:"CARRERA INTERN.",v:2553},{e:"PANAMA JAZZ",v:1975},{e:"LUNA LLENA TAMBORES",v:1907},{e:"MACRO FEST",v:1179},{e:"KANY GARCIA",v:872},{e:"DRAG WAR",v:1557},{e:"LUNA LLENA TAMBORES FEB",v:2375}],tcan:[{e:"LUNA LLENA TAMBORES",v:148},{e:"CARRERA INTERN.",v:86},{e:"NUTRILLERMO",v:77},{e:"PANAMA JAZZ",v:75},{e:"GALA FOLKLORICA",v:63},{e:"KANY GARCIA",v:28},{e:"JOY ONE ICE",v:14},{e:"THE GIPSY",v:10},{e:"MICRO BREW FEST",v:8},{e:"MACRO FEST",v:6}],cort:[{e:"LUNA LLENA TAMBORES FEB",v:2178},{e:"CARRERA INTERN.",v:1993},{e:"PANAMA JAZZ",v:1463},{e:"DRAG WAR",v:1179},{e:"LUNA LLENA TAMBORES",v:556},{e:"GALA FOLKLORICA",v:443},{e:"NUTRILLERMO",v:373},{e:"KANY GARCIA",v:472},{e:"JOY ONE ICE",v:0},{e:"MATAN BASETER",v:38}],cort_j:[]},
+  2:{total:[{e:"MICRO BREW FEST",v:90813},{e:"SEBASTIAN YATRA",v:56620},{e:"SABOR PANAMA",v:55781},{e:"MATAN BASETER",v:52723},{e:"WORLD CUP QUALIFIERS",v:32942},{e:"EL REINO CASCANUECES",v:24627},{e:"KANY GARCIA",v:23387},{e:"GRUPO FRONTERA",v:20556},{e:"MACRO FEST",v:19816},{e:"SUMMER SKATE",v:19416}],precio:[{e:"MICRO BREW FEST",v:75204},{e:"SEBASTIAN YATRA",v:46990},{e:"SABOR PANAMA",v:46616},{e:"MATAN BASETER",v:44821},{e:"WORLD CUP QUALIFIERS",v:24362},{e:"EL REINO CASCANUECES",v:21145},{e:"KANY GARCIA",v:19020},{e:"MACRO FEST",v:16735},{e:"SUMMER SKATE",v:16678},{e:"GRUPO FRONTERA",v:16450}],tvend:[{e:"SABOR PANAMA",v:5869},{e:"MICRO BREW FEST",v:4266},{e:"WORLD CUP QUALIFIERS",v:3354},{e:"EL REINO CASCANUECES",v:3033},{e:"SUMMER SKATE",v:2383},{e:"DRAG CHALLENGE",v:2158},{e:"LUNA LLENA TAMBORES FEB",v:1051},{e:"MACRO FEST",v:414},{e:"SEBASTIAN YATRA",v:394},{e:"MATAN BASETER",v:265}],tcan:[{e:"WORLD CUP QUALIFIERS",v:100},{e:"SABOR PANAMA",v:69},{e:"LUNA LLENA TAMBORES FEB",v:33},{e:"MACRO FEST",v:20},{e:"MICRO BREW FEST",v:11},{e:"MATAN BASETER",v:5},{e:"SEBASTIAN YATRA",v:2},{e:"EL REINO CASCANUECES",v:0},{e:"GRUPO FRONTERA",v:0},{e:"SUMMER SKATE",v:0}],cort:[{e:"SABOR PANAMA",v:3153},{e:"DRAG CHALLENGE",v:1364},{e:"WORLD CUP QUALIFIERS",v:1314},{e:"LUNA LLENA TAMBORES FEB",v:220},{e:"MACRO FEST",v:62},{e:"MATAN BASETER",v:38},{e:"CIRCUS MARKET",v:502},{e:"LAS AVENTURAS HISTORICAS",v:320},{e:"MAESTRA VIDA",v:251},{e:"ESTE GRAN CONCIERTO",v:160}],cort_j:[]},
+  3:{total:[{e:"RAWAYANA",v:765469},{e:"MACRO FEST",v:77349},{e:"GREASE THE MUSICAL",v:68094},{e:"FERIAS CCIAP",v:52294},{e:"EL LAGO CISNES",v:49841},{e:"KANY GARCIA",v:32253},{e:"CIRCUS MARKET",v:29371},{e:"GRAN PREMIO PANAMA",v:28570},{e:"FANTASIA PANAMENA",v:28084},{e:"ROCK OF AGES",v:28009}],precio:[{e:"RAWAYANA",v:573823},{e:"MACRO FEST",v:66439},{e:"GREASE THE MUSICAL",v:62775},{e:"EL LAGO CISNES",v:44725},{e:"FERIAS CCIAP",v:43794},{e:"KANY GARCIA",v:26180},{e:"GRAN PREMIO PANAMA",v:24204},{e:"FANTASIA PANAMENA",v:23324},{e:"ROCK OF AGES",v:23233},{e:"CIRCUS MARKET",v:22943}],tvend:[{e:"RAWAYANA",v:6990},{e:"GRAN PREMIO PANAMA",v:2421},{e:"CIRCUS MARKET",v:2281},{e:"FERIAS CCIAP",v:2209},{e:"MACRO FEST",v:1892},{e:"CHRISTINE D CLAIRO",v:1825},{e:"GREASE THE MUSICAL",v:1779},{e:"EL LAGO CISNES",v:1510},{e:"KANY GARCIA",v:328},{e:"SANDRA FEST",v:1255}],tcan:[{e:"MATAN BASETER",v:353},{e:"RAWAYANA",v:309},{e:"GREASE THE MUSICAL",v:192},{e:"FERIAS CCIAP",v:159},{e:"ASI NOS CRIARON",v:150},{e:"GRAN PREMIO PANAMA",v:113},{e:"ROCK OF AGES",v:90},{e:"LUNA LLENA 29 MARZO",v:72},{e:"FEEL THE BEAT",v:47},{e:"GRAN PREMIO TERRAZA",v:43}],cort:[{e:"LUNA LLENA 29 MARZO",v:1729},{e:"GRAN PREMIO PANAMA",v:1656},{e:"CHRISTINE D CLAIRO",v:1599},{e:"FEEL THE BEAT",v:1382},{e:"INVITADOS PANAMA POLO",v:1117},{e:"MOTOVELOCIDAD MARZO",v:1076},{e:"DIA 300",v:600},{e:"MACRO FEST CORTESIAS",v:3008},{e:"FERIAS CCIAP INVITADOS",v:9165},{e:"GRAN PREMIO TERRAZA",v:777}],cort_j:[{e:"IV Juegos Suramericanos",v:18492}]},
+  4:{total:[{e:"FUTTURA TINI",v:263614},{e:"ROCK OF AGES",v:124734},{e:"KANY GARCIA",v:75072},{e:"RAWAYANA",v:50459},{e:"SANDRA FEST",v:46556},{e:"BALBOA ACADEMY SHREK",v:17734},{e:"BUNNY VENTURE",v:16569},{e:"EL CORSARIO",v:14380},{e:"ANNIE EL MUSICAL",v:13997},{e:"ALLAN WATSON",v:13907}],precio:[{e:"FUTTURA TINI",v:214645},{e:"ROCK OF AGES",v:103482},{e:"KANY GARCIA",v:60815},{e:"SANDRA FEST",v:40331},{e:"RAWAYANA",v:37841},{e:"BALBOA ACADEMY",v:15483},{e:"BUNNY VENTURE",v:13878},{e:"EL CORSARIO",v:13010},{e:"ANNIE EL MUSICAL",v:12495},{e:"ALLAN WATSON",v:11602}],tvend:[{e:"ROCK OF AGES",v:4109},{e:"SANDRA FEST",v:3678},{e:"ANNIE EL MUSICAL",v:2904},{e:"CARRERAS NOCTURNAS",v:2244},{e:"BUNNY VENTURE",v:2172},{e:"500 KM PANAMA",v:1770},{e:"FUTTURA TINI",v:1732},{e:"EL CORSARIO",v:1716},{e:"IFF TEATRO BABY",v:1488},{e:"IFF TEATRO NACIONAL",v:1378}],tcan:[{e:"GRUPO FRONTERA",v:591},{e:"SEBASTIAN YATRA",v:530},{e:"ROCK OF AGES",v:346},{e:"IFF GALA APERTURA",v:105},{e:"RAWAYANA",v:65},{e:"SANDRA FEST",v:48},{e:"FUTTURA TINI",v:37},{e:"ANNIE EL MUSICAL",v:36},{e:"500 KM PANAMA",v:20},{e:"VERANERA",v:18}],cort:[{e:"ANNIE EL MUSICAL",v:2563},{e:"ROCK OF AGES",v:2245},{e:"CARRERAS NOCTURNAS",v:1459},{e:"SANDRA FEST",v:1440},{e:"EL CORSARIO",v:1393},{e:"500 KM PANAMA",v:1180},{e:"IFF TEATRO BABY",v:860},{e:"IFF TEATRO NACIONAL",v:831},{e:"IFF SINFONICA",v:676},{e:"GRUPO FRONTERA",v:655}],cort_j:[{e:"IV Juegos Suramericanos",v:71325}]},
+  5:{total:[{e:"KANY GARCIA",v:84000},{e:"SON MISERABLES",v:46386},{e:"ANNIE EL MUSICAL",v:38991},{e:"RAWAYANA",v:23278},{e:"EL CORSARIO",v:20369},{e:"CUMBIA HOUSE",v:15504},{e:"CHRISTINE D CLAIRO",v:11166},{e:"FOUNDERS CLUB",v:10732},{e:"FUTTURA TINI",v:9225},{e:"500 KM PANAMA",v:5406}],precio:[{e:"KANY GARCIA",v:67870},{e:"SON MISERABLES",v:41235},{e:"ANNIE EL MUSICAL",v:34740},{e:"EL CORSARIO",v:18380},{e:"RAWAYANA",v:17893},{e:"CUMBIA HOUSE",v:12615},{e:"FOUNDERS CLUB",v:9610},{e:"CHRISTINE D CLAIRO",v:9090},{e:"FUTTURA TINI",v:7505},{e:"500 KM PANAMA",v:4736}],tvend:[{e:"EL CORSARIO",v:3806},{e:"ANNIE EL MUSICAL",v:1775},{e:"KANY GARCIA",v:1472},{e:"CARRERAS NOCTURNAS MAYO",v:1368},{e:"MOTOVELOCIDAD MAYO",v:1094},{e:"FESTIVAL CIRCO",v:734},{e:"SON MISERABLES",v:692},{e:"CUMBIA HOUSE",v:597},{e:"RAWAYANA",v:373},{e:"DESIERTO",v:249}],tcan:[{e:"EL CORSARIO",v:140},{e:"ANNIE EL MUSICAL",v:101},{e:"FESTIVAL CIRCO",v:60},{e:"KANY GARCIA",v:45},{e:"CUMBIA HOUSE",v:40},{e:"RAWAYANA",v:35},{e:"FUTTURA TINI",v:12},{e:"SON MISERABLES",v:9},{e:"FOUNDERS CLUB",v:0},{e:"500 KM PANAMA",v:0}],cort:[{e:"EL CORSARIO",v:3328},{e:"CARRERAS NOCTURNAS MAYO",v:1204},{e:"MOTOVELOCIDAD MAYO",v:1064},{e:"ANNIE EL MUSICAL",v:770},{e:"FESTIVAL CIRCO",v:636},{e:"CUMBIA HOUSE",v:436},{e:"FOUNDERS CLUB",v:120},{e:"MUSICALION",v:173},{e:"FUTTURA TINI",v:82},{e:"RAWAYANA",v:35}],cort_j:[]}
+};
+const CONCLUSIONES={
+  0:{title:"Resumen Anual 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:".86M facturados en 5 meses",body:"Enero-Mayo 2026 genero ,864,629 en facturacion neta. Marzo fue el mes record con .25M impulsado por Rawayana."},{num:"02",tag:"ct-w",tagTxt:"Riesgo",title:"Rawayana concentra el 29% del revenue anual",body:"Un solo evento genero  de .86M acumulados. Esta concentracion en un artista es el mayor riesgo estrategico del periodo."},{num:"03",tag:"ct-w",tagTxt:"Cancelaciones",title:" en cancelaciones - 24.6% del bruto",body:"Las cancelaciones acumuladas suman 10,513 tickets y . Abril concentra el 61% de este valor ()."},{num:"04",tag:"ct-ok",tagTxt:"Positivo",title:"Ticket promedio saludable: .44 promedio",body:"El ticket promedio consolidado del periodo es .44, con Marzo liderando a .77 por eventos de alta gama."}]},
+  1:{title:"Conclusiones Enero 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:" neto en Enero",body:"El mes abrio con 46 eventos y ,416 en facturacion neta. Kany Garcia lidera con  seguido de Micro Brew Fest con ."},{num:"02",tag:"ct-ok",tagTxt:"Positivo",title:"Tasa de cancelacion 3.8% - la mas baja del periodo",body:"Solo 785 tickets cancelados (,438). Enero tiene el mejor comportamiento de retencion del periodo."},{num:"03",tag:"ct-a",tagTxt:"Patron",title:"Ticket promedio .71",body:"El ticket promedio mas bajo del ano refleja una mezcla de eventos de precio medio."}]},
+  2:{title:"Conclusiones Febrero 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:" neto - mes mas diversificado",body:"57 eventos activos y ,930 en facturacion neta. Micro Brew Fest lidera con ."},{num:"02",tag:"ct-w",tagTxt:"Cancelaciones",title:".9K cancelado - NASCAR concentra .5K",body:"Nations Panama City NASCAR concentra el 82% del valor cancelado del mes (287 tickets)."},{num:"03",tag:"ct-ok",tagTxt:"Positivo",title:"Mayor numero de eventos activos: 57",body:"Febrero tiene la mayor diversificacion de portafolio del periodo."}]},
+  3:{title:"Conclusiones Marzo 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Record",title:".25M neto - mes record",body:"110 eventos activos. Rawayana genera  (67% del total del mes). El 24 de marzo fue el dia de mayor venta de todo el periodo."},{num:"02",tag:"ct-w",tagTxt:"Riesgo critico",title:"Matan Baseters:  cancelado en Marzo",body:"353 cancelaciones de Matan Baseters representan el 55% del valor cancelado de Marzo ( total)."},{num:"03",tag:"ct-a",tagTxt:"IV Juegos",title:"18,492 cortesias de Juegos Suramericanos",body:"Marzo marca el inicio del procesamiento masivo de entradas para los IV Juegos."}]},
+  4:{title:"Conclusiones Abril 2026",items:[{num:"01",tag:"ct-w",tagTxt:"Cancelaciones criticas",title:" cancelado - el mayor del periodo",body:"Abril tiene el mayor valor cancelado con 5,376 tickets. Matan Baseters () y Grupo Frontera () concentran el 74%."},{num:"02",tag:"ct-i",tagTxt:"IV Juegos",title:"71,325 cortesias - pico operativo",body:"Abril proceso el mayor volumen de cortesias IV Juegos del periodo, validando la capacidad logistica de Panatickets."},{num:"03",tag:"ct-ok",tagTxt:"Positivo",title:"Ticket promedio .80 con portafolio diversificado",body:"94 eventos activos con revenue mejor distribuido que Marzo. Futtura-TINI lidera con ."}]},
+  5:{title:"Conclusiones Mayo 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:" neto con portafolio diversificado",body:"54 eventos activos. Kany Garcia lidera con  (34% del total). Sin dependencia extrema de un solo evento."},{num:"02",tag:"ct-w",tagTxt:"Cancelaciones",title:"Grupo Frontera:  en cancelaciones (79% del total)",body:"451 cancelaciones de Grupo Frontera Tour dominan el mes. Patron que se repite en multiples meses del ano."},{num:"03",tag:"ct-ok",tagTxt:"Mejor",title:"Ticket promedio mas alto tras Marzo: .20",body:"El segundo ticket promedio mas alto del periodo, impulsado por eventos premium como Kany Garcia y Son Miserables."}]}
+};
+<script src="app.js"></script>
+</body>
+</html>
