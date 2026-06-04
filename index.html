@@ -8,6 +8,18 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
+#loginOverlay{position:fixed;inset:0;background:#0b0e14;z-index:9999;display:flex;align-items:center;justify-content:center;}
+#loginBox{background:#161b27;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:40px 48px;width:100%;max-width:380px;text-align:center;}
+#loginBox img{height:48px;margin-bottom:8px;}
+#loginBox h2{font-family:'DM Serif Display',serif;font-size:22px;color:#f0f2f7;margin-bottom:4px;}
+#loginBox p{font-size:12px;color:#8892aa;margin-bottom:28px;}
+#loginBox input{width:100%;background:#111520;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:#f0f2f7;outline:none;transition:border-color .2s;margin-bottom:12px;box-sizing:border-box;}
+#loginBox input:focus{border-color:#3d8ef8;}
+#loginBox button{width:100%;background:#3d8ef8;color:#fff;border:none;border-radius:10px;padding:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:background .2s;}
+#loginBox button:hover{background:#5ba3ff;}
+#loginError{color:#f0484a;font-size:12px;margin-top:8px;display:none;}
+</style>
+<style>
 :root{
   --bg:#0b0e14;--bg2:#111520;--card:#161b27;--card2:#1c2233;
   --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
@@ -134,7 +146,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .kpiPanel{position:fixed;bottom:0;left:230px;right:0;background:var(--bg2);border-top:1px solid var(--border2);border-radius:16px 16px 0 0;padding:20px 28px;transform:translateY(100%);transition:transform .3s ease;z-index:400;max-height:55vh;overflow-y:auto}
 </style>
 </head>
-<body><div class="shell">
+<body><div id="loginOverlay">
+  <div id="loginBox">
+    <h2>Panatickets</h2>
+    <p>Dashboard 2026 &mdash; Acceso restringido</p>
+    <input type="password" id="pwdInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter')checkPwd()"/>
+    <button onclick="checkPwd()">Ingresar</button>
+    <div id="loginError">Contraseña incorrecta</div>
+  </div>
+</div>
+<div class="shell" id="mainShell" style="display:none">
 <aside class="sidebar">
   <div class="logo">
     <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 50'%3E%3Crect width='200' height='50' fill='%230b0e14'/%3E%3Ctext x='100' y='35' text-anchor='middle' font-family='Arial' font-size='22' font-weight='bold' fill='%233d8ef8'%3EPanatickets%3C/text%3E%3C/svg%3E" alt="Panatickets">
@@ -478,6 +499,20 @@ const CONCLUSIONES={
   4:{title:"Conclusiones Abril 2026",items:[{num:"01",tag:"ct-w",tagTxt:"Cancelaciones criticas",title:" cancelado - el mayor del periodo",body:"Abril tiene el mayor valor cancelado con 5,376 tickets. Matan Baseters () y Grupo Frontera () concentran el 74%."},{num:"02",tag:"ct-i",tagTxt:"IV Juegos",title:"71,325 cortesias - pico operativo",body:"Abril proceso el mayor volumen de cortesias IV Juegos del periodo, validando la capacidad logistica de Panatickets."},{num:"03",tag:"ct-ok",tagTxt:"Positivo",title:"Ticket promedio .80 con portafolio diversificado",body:"94 eventos activos con revenue mejor distribuido que Marzo. Futtura-TINI lidera con ."}]},
   5:{title:"Conclusiones Mayo 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:" neto con portafolio diversificado",body:"54 eventos activos. Kany Garcia lidera con  (34% del total). Sin dependencia extrema de un solo evento."},{num:"02",tag:"ct-w",tagTxt:"Cancelaciones",title:"Grupo Frontera:  en cancelaciones (79% del total)",body:"451 cancelaciones de Grupo Frontera Tour dominan el mes. Patron que se repite en multiples meses del ano."},{num:"03",tag:"ct-ok",tagTxt:"Mejor",title:"Ticket promedio mas alto tras Marzo: .20",body:"El segundo ticket promedio mas alto del periodo, impulsado por eventos premium como Kany Garcia y Son Miserables."}]}
 };
+</script>
+<script>
+function checkPwd(){
+  var v=document.getElementById('pwdInput').value;
+  if(v==='panatickets2@26'){
+    document.getElementById('loginOverlay').style.display='none';
+    document.getElementById('mainShell').style.display='flex';
+  } else {
+    document.getElementById('loginError').style.display='block';
+    document.getElementById('pwdInput').value='';
+    document.getElementById('pwdInput').focus();
+  }
+}
+document.addEventListener('DOMContentLoaded',function(){document.getElementById('pwdInput').focus();});
 </script>
 <script src="app.js"></script>
 </body>
