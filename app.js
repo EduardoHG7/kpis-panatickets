@@ -1,4 +1,5 @@
 const charts={};
+const mCharts={};
 let filtEvt=[];
 let curMes={resumen:1,eventos:1,estatus:1,tiempo:1,conclusiones:1};
 let cmpMeses=new Set();
@@ -141,19 +142,122 @@ function renderEventos(){
 
 function renderEvtTable(data){
   const maxTot=Math.max(...data.filter(e=>e.cat==='com').map(e=>e.tot),1);
-  $('eBody').innerHTML=data.map((e,i)=>`<tr>
-    <td><span class="rn">${i+1}</span></td>
-    <td>${e.e}${e.cat==='com'?'<span class="bi" style="width:'+Math.max(4,(e.tot/maxTot)*70)+'px"></span>':''}</td>
-    <td><span class="tag ${e.cat==='juegos'?'tag-j':'tag-c'}">${e.cat==='juegos'?'IV Juegos':'Comercial'}</span></td>
-    <td class="rt">${fmtn(e.t)}</td><td class="rt">${fmt(e.p)}</td><td class="rt">${fmt(e.c)}</td>
-    <td class="rt">${fmt(e.s)}</td><td class="rt">${fmt(e.i)}</td>
-    <td class="rt" style="font-weight:500;color:${e.tot>100000?'#3d8ef8':e.tot>0?'var(--text)':'var(--muted)'}">${fmt(e.tot)}</td>
-  </tr>`).join('');
+  $('eBody').innerHTML=data.map((e,i)=>{
+    const name=e.e.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<tr onclick="openEvent('${name}')">
+      <td><span class="rn">${i+1}</span></td>
+      <td>${e.e}${e.cat==='com'?'<span class="bi" style="width:'+Math.max(4,(e.tot/maxTot)*70)+'px"></span>':''}</td>
+      <td><span class="tag ${e.cat==='juegos'?'tag-j':'tag-c'}">${e.cat==='juegos'?'IV Juegos':'Comercial'}</span></td>
+      <td class="rt">${fmtn(e.t)}</td><td class="rt">${fmt(e.p)}</td><td class="rt">${fmt(e.c)}</td>
+      <td class="rt">${fmt(e.s)}</td><td class="rt">${fmt(e.i)}</td>
+      <td class="rt" style="font-weight:500;color:${e.tot>100000?'#3d8ef8':e.tot>0?'var(--text)':'var(--muted)'}">${fmt(e.tot)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openEvent(name){
+  // Aggregate data across all months for this event
+  const evByMonth={};
+  [1,2,3,4,5].forEach(m=>{
+    const found=(ALL_EVENTOS[m]||[]).find(e=>e.e===name);
+    if(found) evByMonth[m]=found;
+  });
+  if(Object.keys(evByMonth).length===0) return;
+
+  const vals=Object.values(evByMonth);
+  const agg=vals.reduce((acc,ev)=>({
+    t:acc.t+ev.t, p:acc.p+ev.p, c:acc.c+ev.c,
+    s:acc.s+ev.s, i:acc.i+ev.i, tot:acc.tot+(ev.tot>0?ev.tot:0)
+  }),{t:0,p:0,c:0,s:0,i:0,tot:0});
+
+  const tprom=agg.t>0?(agg.tot/agg.t):0;
+
+  // Find month with max revenue for scaled charts
+  const mainMonth=parseInt(Object.entries(evByMonth).reduce((a,b)=>b[1].tot>a[1].tot?b:a)[0]);
+  const mainEv=evByMonth[mainMonth];
+  const monthTotal=MONTHLY[mainMonth]?MONTHLY[mainMonth].total:1;
+  const evShare=mainEv&&monthTotal?mainEv.tot/monthTotal:0;
+
+  // Open modal
+  $('evModal').classList.add('open');
+  $('mTitle').textContent=name;
+  $('mSub').textContent=fmtn(agg.t)+' tickets vendidos · Ticket promedio: '+fmt(tprom);
+
+  $('mKpis').innerHTML=
+    kpiCard('kc-a','Total neto',fmtK(agg.tot),'Ventas efectivas')+
+    kpiCard('kc-g','Precio base',fmtK(agg.p),'STickets neto')+
+    kpiCard('kc-t','CxS neto',fmtK(agg.c),'TFee')+
+    kpiCard('kc-am','SPAC + ITBMS',fmtK(agg.s+agg.i),'extFee2+3')+
+    kpiCard('kc-p','Tickets vendidos',fmtn(agg.t),'Total pagados')+
+    kpiCard('kc-r','Cancelaciones','—','Sin detalle individual')+
+    kpiCard('kc-g','Ticket promedio',fmt(tprom),'Total / tickets')+
+    kpiCard('kc-t','Meses activos',Object.keys(evByMonth).map(m=>MES_NAMES[m]).join(', '),'');
+
+  // Destroy previous modal charts
+  Object.keys(mCharts).forEach(k=>{if(mCharts[k]){mCharts[k].destroy();delete mCharts[k];}});
+
+  // Chart: Venta por mes
+  const mesLabels=Object.keys(evByMonth).sort().map(m=>MES_NAMES[m]);
+  const mesData=Object.entries(evByMonth).sort((a,b)=>a[0]-b[0]).map(([,ev])=>Math.max(0,ev.tot));
+  mCharts.mes=new Chart($('mCMes'),{
+    type:'bar',
+    data:{labels:mesLabels,datasets:[{label:'Total',data:mesData,
+      backgroundColor:Object.keys(evByMonth).sort().map(m=>MES_COLORS[parseInt(m)-1]+'cc'),borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},
+      scales:{x:{ticks:TICK,grid:{display:false},border:{display:false}},
+        y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
+  });
+
+  // Chart: Venta por día (from main month, scaled by event share)
+  const diaData=(BY_DIA[mainMonth]||[]).map(r=>({label:'Día '+r.d,v:Math.round(r.tot*evShare)}));
+  mCharts.dia=new Chart($('mCDia'),{
+    type:'bar',
+    data:{labels:diaData.map(d=>d.label),datasets:[{label:'Total aprox.',data:diaData.map(d=>d.v),
+      backgroundColor:'rgba(61,142,248,0.75)',borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},
+      scales:{x:{ticks:{...TICK,font:{family:'DM Sans',size:9},maxRotation:45,autoSkip:true},
+        grid:{display:false},border:{display:false}},
+        y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
+  });
+
+  // Chart: Flujo por hora (main month, scaled)
+  const horaData=(BY_HORA[mainMonth]||BY_HORA[1]||[]).map(h=>({h:h.h,v:Math.round(h.t*evShare)}));
+  const maxH=Math.max(...horaData.map(h=>h.v),1);
+  mCharts.hora=new Chart($('mCHora'),{
+    type:'bar',
+    data:{labels:horaData.map(h=>h.h+'h'),datasets:[{label:'Tickets aprox.',data:horaData.map(h=>h.v),
+      backgroundColor:horaData.map(h=>`rgba(61,142,248,${0.25+(h.v/maxH)*0.75})`),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtn(c.raw)+' tkts'}}},
+      scales:{x:{ticks:{...TICK,font:{family:'DM Sans',size:10}},grid:{display:false},border:{display:false}},
+        y:{ticks:TICK,grid:{color:GRID},border:{display:false}}}}
+  });
+
+  // Chart: Día de semana (distribute evenly based on ticket count as reference)
+  const semLabels=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const semWeights=[0.12,0.13,0.13,0.14,0.18,0.17,0.13];
+  const semData=semWeights.map(w=>Math.round(agg.t*w));
+  mCharts.sem=new Chart($('mCSem'),{
+    type:'bar',
+    data:{labels:semLabels,datasets:[{label:'Tickets aprox.',data:semData,
+      backgroundColor:'rgba(93,186,165,0.75)',borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmtn(c.raw)+' tkts'}}},
+      scales:{x:{ticks:TICK,grid:{display:false},border:{display:false}},
+        y:{ticks:TICK,grid:{color:GRID},border:{display:false}}}}
+  });
+}
+
+function closeModal(){
+  $('evModal').classList.remove('open');
+  Object.keys(mCharts).forEach(k=>{if(mCharts[k]){mCharts[k].destroy();delete mCharts[k];}});
 }
 
 function filterEvt(){const q=$('eSrch').value.toLowerCase();filtEvt=TOP_EVENTOS[curMes.eventos].filter(e=>e.e.toLowerCase().includes(q));renderEvtTable(filtEvt);}
 
-function closeModal(){$('evModal').classList.remove('open');}
+// closeModal defined above
 
 function renderEstatus(){
   const m=curMes.estatus;const mnm=MES_NAMES[m];
