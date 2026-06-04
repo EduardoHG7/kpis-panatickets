@@ -134,7 +134,7 @@ function renderEventos(){
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{bottom:30}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},
       scales:{x:{ticks:{...TICK,font:{family:'DM Sans',size:10},maxRotation:40,callback:function(val){const l=this.getLabelForValue(val);return l.length>16?l.substring(0,14)+'…':l;}},grid:{display:false},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
   });
-  const topEvt=top10[0];const baseTotal=isGen?2864629:MONTHLY[m].total;
+  const topEvt=top10[0];const baseTotal=isGen?[1,2,3,4,5].reduce((s,x)=>s+MONTHLY[x].total,0):MONTHLY[m].total;
   const pctTop=topEvt?((topEvt.tot/baseTotal)*100).toFixed(1):0;
   $('eInsight').innerHTML='<div class="it">Concentracion</div><strong>'+(topEvt?topEvt.e:'—')+' concentra el '+pctTop+'%</strong> del total '+(isGen?'anual':'del mes')+' ('+(topEvt?fmtK(topEvt.tot):'—')+' de '+fmtK(baseTotal)+'). '+(pctTop>40?'Alta concentracion.':pctTop>25?'Concentracion moderada.':'Distribucion saludable.');
   renderEvtTable(filtEvt);
