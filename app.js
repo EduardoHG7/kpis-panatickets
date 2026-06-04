@@ -1,11 +1,3 @@
-const $=id=>document.getElementById(id);
-const fmt=v=>'$'+Number(v).toLocaleString('es-PA',{minimumFractionDigits:0,maximumFractionDigits:0});
-const fmtK=v=>v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':fmt(v);
-const fmtn=v=>Number(v).toLocaleString('es-PA');
-const GRID='rgba(255,255,255,0.05)';
-const TICK={color:'#8892aa',font:{family:'DM Sans',size:11}};
-const MES_NAMES=['','Enero','Febrero','Marzo','Abril','Mayo'];
-const MES_COLORS=['#3d8ef8','#14c8b4','#f5a623','#9b6dff','#22c47a'];
 const charts={};
 let filtEvt=[];
 let curMes={resumen:1,eventos:1,estatus:1,tiempo:1,conclusiones:1};
