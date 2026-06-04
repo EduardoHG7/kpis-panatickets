@@ -122,7 +122,7 @@ function renderResumen(){
 
 function renderEventos(){
   const m=curMes.eventos;const isGen=m===0;const mnm=isGen?'General Ene–May':MES_NAMES[m]+' 2026';
-  filtEvt=[...TOP_EVENTOS[m]];
+  filtEvt=[...ALL_EVENTOS[m]];
   $('eChartSub').textContent=isGen?'Enero–Mayo 2026 · Acumulado anual':mnm+' · Eventos comerciales';
   $('eTblTitle').textContent='Tabla completa — '+filtEvt.length+' eventos · '+mnm;
   const top10=TOP_EVENTOS[m].filter(e=>e.cat==='com').slice(0,10);
