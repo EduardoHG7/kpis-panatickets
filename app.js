@@ -4,6 +4,14 @@ let filtEvt=[];
 let curMes={resumen:1,eventos:1,estatus:1,tiempo:1,conclusiones:1};
 let cmpMeses=new Set();
 
+// Meses con datos disponibles (se actualizan solos al cargar un Excel nuevo)
+const MESES=()=>Object.keys(MONTHLY).map(Number).filter(m=>m>=1).sort((a,b)=>a-b);
+const MAX_MES=()=>Math.max(...MESES());
+const mesNom=m=>MES_NAMES[m]||('Mes '+m);
+const mesAbr=m=>mesNom(m).substring(0,3);
+const GEN_LABEL=()=>'General Ene–'+mesAbr(MAX_MES());
+const SIN_DATOS=mnm=>'<div class="insight ia" style="margin-bottom:16px"><div class="it">Sin datos</div>Aun no hay datos cargados para <strong>'+mnm+'</strong>. Usa el boton <strong>Actualizar datos</strong> de la barra lateral para cargar el Excel mas reciente.</div>';
+
 function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 
 function kpiCard(cls,label,val,sub){
@@ -49,7 +57,7 @@ function openKpiPanel(key,title,colLabel,isMoney){
   if(!data||data.length===0)return;
   const total=data.reduce((s,r)=>s+r.v,0);
   $('kpiPanelTitle').textContent=title;
-  $('kpiPanelSub').textContent=colLabel+' · Top 10 eventos · '+(m===0?'General Ene–May':MES_NAMES[m]+' 2026');
+  $('kpiPanelSub').textContent=colLabel+' · Top 10 eventos · '+(m===0?GEN_LABEL():mesNom(m)+' 2026');
   $('kpiPanelColHdr').textContent=colLabel;
   $('kpiPanelBody').innerHTML=data.map((r,i)=>'<tr><td><span class="rn">'+(i+1)+'</span></td><td>'+r.e+'</td><td class="rt" style="font-weight:500">'+(isMoney?fmt(r.v):fmtn(r.v))+'</td><td class="rt" style="color:var(--muted)">'+(total>0?((r.v/total)*100).toFixed(1)+'%':'&mdash;')+'</td></tr>').join('');
   $('kpiPanel').style.transform='translateY(0)';
@@ -59,7 +67,15 @@ function openKpiPanel(key,title,colLabel,isMoney){
 function closeKpiPanel(){$('kpiPanel').style.transform='translateY(100%)';$('kpiPanelBg').style.display='none';}
 
 function renderResumen(){
-  const m=curMes.resumen;const d=MONTHLY[m];const mnm=MES_NAMES[m];
+  const m=curMes.resumen;const d=MONTHLY[m];const mnm=mesNom(m);
+  if(!d){
+    $('rMeta').textContent=mnm+' 2026 — sin datos';
+    $('rKpis').innerHTML=SIN_DATOS(mnm);
+    $('rInsight1').innerHTML='';$('rInsight2').innerHTML='';$('rVsPanel').innerHTML='';
+    $('rCmpTitle').textContent='Evolucion mensual';
+    destroyChart('rDonut');destroyChart('rCmp');
+    return;
+  }
   $('rMeta').textContent=mnm+' 2026';
   const tcrit=d.tcan+d.tvend;const taxaCan=tcrit>0?((d.tcan/tcrit)*100).toFixed(1):'0.0';
   const ck=(cls,lbl,val,sub,key,isMoney,tip)=>{
@@ -106,15 +122,15 @@ function renderResumen(){
     '</div>';
   $('rInsight2').innerHTML='<div class="it">Cancelaciones</div>Impacto de <strong>'+fmt(d.vcCan)+' ('+((d.vcCan/(d.precio||1))*100).toFixed(1)+'% del bruto)</strong>. '+(parseFloat(taxaCan)>8?'Tasa elevada.':'Dentro del rango normal.');
   destroyChart('rCmp');
-  const allM=[m,...[...cmpMeses].filter(c=>c!==m&&c>=1&&c<=5)].sort();const hasCmp=allM.length>1;
-  $('rCmpTitle').textContent=hasCmp?'Comparativo: '+allM.map(x=>MES_NAMES[x]).join(' vs '):'Evolucion mensual';
+  const allM=[m,...[...cmpMeses].filter(c=>c!==m&&MONTHLY[c])].sort((a,b)=>a-b);const hasCmp=allM.length>1;
+  $('rCmpTitle').textContent=hasCmp?'Comparativo: '+allM.map(mesNom).join(' vs '):'Evolucion mensual';
   charts.rCmp=new Chart($('cRCmp'),{
     type:'bar',
     data:{
-      labels:hasCmp?allM.map(x=>MES_NAMES[x]):MES_NAMES.slice(1),
+      labels:hasCmp?allM.map(mesNom):MESES().map(mesNom),
       datasets:[
-        {label:'Total',data:hasCmp?allM.map(x=>MONTHLY[x].total):[1,2,3,4,5].map(x=>MONTHLY[x].total),backgroundColor:hasCmp?allM.map((_,i)=>i===0?'rgba(61,142,248,0.8)':'rgba(155,109,255,0.6)'):MES_COLORS.map(c=>c+'cc'),borderRadius:5},
-        {label:'Venta efectiva',data:hasCmp?allM.map(x=>MONTHLY[x].vcVend):[1,2,3,4,5].map(x=>MONTHLY[x].vcVend),backgroundColor:'rgba(34,196,122,0.5)',borderRadius:5}
+        {label:'Total',data:hasCmp?allM.map(x=>MONTHLY[x].total):MESES().map(x=>MONTHLY[x].total),backgroundColor:hasCmp?allM.map((_,i)=>i===0?'rgba(61,142,248,0.8)':'rgba(155,109,255,0.6)'):MESES().map(x=>MES_COLORS[(x-1)%MES_COLORS.length]+'cc'),borderRadius:5},
+        {label:'Venta efectiva',data:hasCmp?allM.map(x=>MONTHLY[x].vcVend):MESES().map(x=>MONTHLY[x].vcVend),backgroundColor:'rgba(34,196,122,0.5)',borderRadius:5}
       ]
     },
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{x:{ticks:TICK,grid:{display:false},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
@@ -122,11 +138,11 @@ function renderResumen(){
 }
 
 function renderEventos(){
-  const m=curMes.eventos;const isGen=m===0;const mnm=isGen?'General Ene–May':MES_NAMES[m]+' 2026';
-  filtEvt=[...ALL_EVENTOS[m]];
-  $('eChartSub').textContent=isGen?'Enero–Mayo 2026 · Acumulado anual':mnm+' · Eventos comerciales';
+  const m=curMes.eventos;const isGen=m===0;const mnm=isGen?GEN_LABEL():mesNom(m)+' 2026';
+  filtEvt=[...(ALL_EVENTOS[m]||[])];
+  $('eChartSub').textContent=isGen?'Enero–'+mesNom(MAX_MES())+' 2026 · Acumulado anual':mnm+' · Eventos comerciales';
   $('eTblTitle').textContent='Tabla completa — '+filtEvt.length+' eventos · '+mnm;
-  const top10=TOP_EVENTOS[m].filter(e=>e.cat==='com').slice(0,10);
+  const top10=(TOP_EVENTOS[m]||[]).filter(e=>e.cat==='com').slice(0,10);
   destroyChart('eTop');
   charts.eTop=new Chart($('cETop'),{
     type:'bar',
@@ -134,9 +150,13 @@ function renderEventos(){
     options:{responsive:true,maintainAspectRatio:false,layout:{padding:{bottom:30}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},
       scales:{x:{ticks:{...TICK,font:{family:'DM Sans',size:10},maxRotation:40,callback:function(val){const l=this.getLabelForValue(val);return l.length>16?l.substring(0,14)+'…':l;}},grid:{display:false},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
   });
-  const topEvt=top10[0];const baseTotal=isGen?[1,2,3,4,5].reduce((s,x)=>s+MONTHLY[x].total,0):MONTHLY[m].total;
+  const topEvt=top10[0];const baseTotal=isGen?MESES().reduce((s,x)=>s+MONTHLY[x].total,0):(MONTHLY[m]?MONTHLY[m].total:1);
   const pctTop=topEvt?((topEvt.tot/baseTotal)*100).toFixed(1):0;
-  $('eInsight').innerHTML='<div class="it">Concentracion</div><strong>'+(topEvt?topEvt.e:'—')+' concentra el '+pctTop+'%</strong> del total '+(isGen?'anual':'del mes')+' ('+(topEvt?fmtK(topEvt.tot):'—')+' de '+fmtK(baseTotal)+'). '+(pctTop>40?'Alta concentracion.':pctTop>25?'Concentracion moderada.':'Distribucion saludable.');
+  if(filtEvt.length===0){
+    $('eInsight').innerHTML='<div class="it">Sin datos</div>Aun no hay datos cargados para <strong>'+mnm+'</strong>. Usa el boton <strong>Actualizar datos</strong> de la barra lateral para cargar el Excel mas reciente.';
+  } else {
+    $('eInsight').innerHTML='<div class="it">Concentracion</div><strong>'+(topEvt?topEvt.e:'—')+' concentra el '+pctTop+'%</strong> del total '+(isGen?'anual':'del mes')+' ('+(topEvt?fmtK(topEvt.tot):'—')+' de '+fmtK(baseTotal)+'). '+(pctTop>40?'Alta concentracion.':pctTop>25?'Concentracion moderada.':'Distribucion saludable.');
+  }
   renderEvtTable(filtEvt);
 }
 
@@ -158,7 +178,7 @@ function renderEvtTable(data){
 function openEvent(name){
   // Aggregate data across all months for this event
   const evByMonth={};
-  [1,2,3,4,5].forEach(m=>{
+  MESES().forEach(m=>{
     const found=(ALL_EVENTOS[m]||[]).find(e=>e.e===name);
     if(found) evByMonth[m]=found;
   });
@@ -191,18 +211,18 @@ function openEvent(name){
     kpiCard('kc-p','Tickets vendidos',fmtn(agg.t),'Total pagados')+
     kpiCard('kc-r','Cancelaciones','—','Sin detalle individual')+
     kpiCard('kc-g','Ticket promedio',fmt(tprom),'Total / tickets')+
-    kpiCard('kc-t','Meses activos',Object.keys(evByMonth).map(m=>MES_NAMES[m]).join(', '),'');
+    kpiCard('kc-t','Meses activos',Object.keys(evByMonth).map(m=>mesNom(parseInt(m))).join(', '),'');
 
   // Destroy previous modal charts
   Object.keys(mCharts).forEach(k=>{if(mCharts[k]){mCharts[k].destroy();delete mCharts[k];}});
 
   // Chart: Venta por mes
-  const mesLabels=Object.keys(evByMonth).sort().map(m=>MES_NAMES[m]);
+  const mesLabels=Object.keys(evByMonth).sort((a,b)=>a-b).map(m=>mesNom(parseInt(m)));
   const mesData=Object.entries(evByMonth).sort((a,b)=>a[0]-b[0]).map(([,ev])=>Math.max(0,ev.tot));
   mCharts.mes=new Chart($('mCMes'),{
     type:'bar',
     data:{labels:mesLabels,datasets:[{label:'Total',data:mesData,
-      backgroundColor:Object.keys(evByMonth).sort().map(m=>MES_COLORS[parseInt(m)-1]+'cc'),borderRadius:6}]},
+      backgroundColor:Object.keys(evByMonth).sort((a,b)=>a-b).map(m=>MES_COLORS[(parseInt(m)-1)%MES_COLORS.length]+'cc'),borderRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},
       scales:{x:{ticks:TICK,grid:{display:false},border:{display:false}},
@@ -255,12 +275,12 @@ function closeModal(){
   Object.keys(mCharts).forEach(k=>{if(mCharts[k]){mCharts[k].destroy();delete mCharts[k];}});
 }
 
-function filterEvt(){const q=$('eSrch').value.toLowerCase();filtEvt=TOP_EVENTOS[curMes.eventos].filter(e=>e.e.toLowerCase().includes(q));renderEvtTable(filtEvt);}
+function filterEvt(){const q=$('eSrch').value.toLowerCase();filtEvt=(TOP_EVENTOS[curMes.eventos]||[]).filter(e=>e.e.toLowerCase().includes(q));renderEvtTable(filtEvt);}
 
 // closeModal defined above
 
 function renderEstatus(){
-  const m=curMes.estatus;const mnm=MES_NAMES[m];
+  const m=curMes.estatus;const mnm=mesNom(m);
   $('stCancelSub').textContent=mnm+' 2026';
   $('stVsSub').textContent=mnm+' 2026 · Valor en dólares';
   const cdata=CANCEL_DATA[m]||[];const vsdata=VS_DATA[m]||[];const tdata=TASA_DATA[m]||[];
@@ -293,12 +313,12 @@ function renderEstatus(){
 
 function renderTiempo(){
   const m=curMes.tiempo;const isGen=m===0;
-  const mnm=isGen?'General (Ene–May)':MES_NAMES[m]+' 2026';
+  const mnm=isGen?'General (Ene–'+mesAbr(MAX_MES())+')':mesNom(m)+' 2026';
   $('tDiaSub').textContent=mnm;
   let diasData;
   if(isGen){
     const all=[];
-    [1,2,3,4,5].forEach(mes=>{if(BY_DIA[mes])BY_DIA[mes].forEach(r=>all.push({label:MES_NAMES[mes].substring(0,3)+' '+String(r.d).padStart(2,'0'),tot:r.tot,can:r.can,vend:r.vend}));});
+    MESES().forEach(mes=>{if(BY_DIA[mes])BY_DIA[mes].forEach(r=>all.push({label:mesAbr(mes)+' '+String(r.d).padStart(2,'0'),tot:r.tot,can:r.can,vend:r.vend}));});
     diasData=all;
   } else {
     diasData=(BY_DIA[m]||[]).map(r=>({label:String(r.d).padStart(2,'0'),tot:r.tot,can:r.can,vend:r.vend}));
@@ -345,61 +365,115 @@ function renderTiempo(){
 
 function renderConclusiones(){
   const m=curMes.conclusiones;const d=CONCLUSIONES[m];
-  const kpis=m===0?
-    kpiCard('kc-a','Total neto 5 meses','$2.86M','Ene–May 2026')+kpiCard('kc-g','Precio base neto','$2.32M','')+kpiCard('kc-r','Valor cancelado','$703K','10,513 tickets')+kpiCard('kc-t','Tickets pagados','87,936',''):
-    m===1?kpiCard('kc-a','Total neto Enero','$488K','')+kpiCard('kc-g','Precio base','$404K','')+kpiCard('kc-r','Cancelado','$12K','785 tickets')+kpiCard('kc-am','Eventos','46',''):
-    m===2?kpiCard('kc-a','Total neto Febrero','$461K','')+kpiCard('kc-g','Precio base','$381K','')+kpiCard('kc-r','Cancelado','$31K','660 tickets')+kpiCard('kc-am','Eventos','57',''):
-    m===3?kpiCard('kc-a','Total neto Marzo','$1.25M','')+kpiCard('kc-g','Precio base','$991K','')+kpiCard('kc-r','Cancelado','$151K','2,772 tickets')+kpiCard('kc-am','Eventos','110',''):
-    m===4?kpiCard('kc-a','Total neto Abril','$416K','')+kpiCard('kc-g','Precio base','$341K','')+kpiCard('kc-r','Cancelado','$431K','5,376 tickets')+kpiCard('kc-am','Eventos','94',''):
-    kpiCard('kc-a','Total neto Mayo','$245K','')+kpiCard('kc-g','Precio base','$208K','')+kpiCard('kc-r','Cancelado','$78K','920 tickets')+kpiCard('kc-am','Eventos','54','');
+  let kpis;
+  if(m===0){
+    const ms=MESES();
+    const sum=f=>ms.reduce((s,x)=>s+(MONTHLY[x][f]||0),0);
+    kpis=kpiCard('kc-a','Total neto '+ms.length+' meses',fmtK(sum('total')),'Ene–'+mesAbr(MAX_MES())+' 2026')+
+      kpiCard('kc-g','Precio base neto',fmtK(sum('precio')),'')+
+      kpiCard('kc-r','Valor cancelado',fmtK(sum('vcCan')),fmtn(sum('tcan'))+' tickets')+
+      kpiCard('kc-t','Tickets pagados',fmtn(sum('tvend')),'');
+  } else if(MONTHLY[m]){
+    const dm=MONTHLY[m];
+    kpis=kpiCard('kc-a','Total neto '+mesNom(m),fmtK(dm.total),'')+
+      kpiCard('kc-g','Precio base',fmtK(dm.precio),'')+
+      kpiCard('kc-r','Cancelado',fmtK(dm.vcCan),fmtn(dm.tcan)+' tickets')+
+      kpiCard('kc-am','Eventos',dm.eventos,'');
+  } else {
+    $('concContent').innerHTML=SIN_DATOS(mesNom(m));
+    return;
+  }
   $('concContent').innerHTML=
     '<div class="kpi-grid kpi-grid-4" style="margin-bottom:18px">'+kpis+'</div>'+
     '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px">'+
-      '<div style="font-family:\'DM Serif Display\',serif;font-size:20px;margin-bottom:16px">'+(d?d.title:'')+'</div>'+
-      '<div class="conc-grid">'+(d?d.items.map(i=>'<div class="ci"><span class="ctag '+i.tag+'">'+i.tagTxt+'</span><div class="cn">'+i.num+'</div><div class="ctitle">'+i.title+'</div><div class="cbody">'+i.body+'</div></div>').join(''):'')+'</div>'+
+      '<div style="font-family:\'DM Serif Display\',serif;font-size:20px;margin-bottom:16px">'+(d?d.title:'Conclusiones '+mesNom(m)+' 2026')+'</div>'+
+      (d?'<div class="conc-grid">'+d.items.map(i=>'<div class="ci"><span class="ctag '+i.tag+'">'+i.tagTxt+'</span><div class="cn">'+i.num+'</div><div class="ctitle">'+i.title+'</div><div class="cbody">'+i.body+'</div></div>').join('')+'</div>':'<div style="font-size:12px;color:var(--muted)">Las conclusiones ejecutivas de este mes aun no han sido redactadas.</div>')+
     '</div>';
 }
 
-// ── Initialize annual charts ──────────────────────────────────────────────
+// ── Annual section (rebuilt dynamically from MONTHLY) ────────────────────
 const pagoColors=['#3d8ef8','#5ba3ff','#14c8b4','#9b6dff','#22c47a'];
 
-charts.anualLine=new Chart($('cAnualLine'),{
-  type:'line',
-  data:{labels:['Enero','Febrero','Marzo','Abril','Mayo'],datasets:[
-    {label:'Total neto',data:[488416,460930,1253995,416447,244841],borderColor:'#3d8ef8',backgroundColor:'rgba(61,142,248,0.08)',fill:true,tension:0.35,pointRadius:5,borderWidth:2},
-    {label:'Precio base',data:[403794,380825,991075,340738,208463],borderColor:'#22c47a',backgroundColor:'rgba(34,196,122,0.06)',fill:true,tension:0.35,pointRadius:5,borderWidth:2}
-  ]},
-  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
-    scales:{x:{ticks:TICK,grid:{color:GRID},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
-});
+function renderAnual(){
+  const ms=MESES();const n=ms.length;
+  const sum=f=>ms.reduce((s,x)=>s+(MONTHLY[x][f]||0),0);
+  const tot=sum('total'),pre=sum('precio'),can=sum('vcCan'),tv=sum('tvend'),tc=sum('tcan');
+  $('anualMeta').innerHTML='Enero &ndash; '+mesNom(MAX_MES())+' 2026 &middot; Consolidado de '+n+' meses';
+  $('anualKpis').innerHTML=
+    kpiCard('kc-a','Total facturado neto ('+n+' meses)',fmtK(tot),'Ventas &minus; Cancelaciones')+
+    kpiCard('kc-g','Precio base neto acumulado',fmtK(pre),'STickets neto Ene&ndash;'+mesAbr(MAX_MES())+' 2026')+
+    kpiCard('kc-r','Total cancelaciones',fmtK(can),fmtn(tc)+' tickets cancelados')+
+    kpiCard('kc-t','Tickets pagados',fmtn(tv),'Precio &gt; $0 &middot; ventas confirmadas');
+  const best=f=>ms.reduce((b,x)=>MONTHLY[x][f]>MONTHLY[b][f]?x:b,ms[0]);
+  const row=(lbl,cells,totTxt,bestM)=>'<tr><td>'+lbl+'</td>'+ms.map((x,i)=>'<td'+(x===bestM?' class="best"':'')+'>'+cells[i]+'</td>').join('')+'<td>'+totTxt+'</td></tr>';
+  const money=f=>ms.map(x=>fmt(MONTHLY[x][f]));
+  const cnt=f=>ms.map(x=>fmtn(MONTHLY[x][f]));
+  const tasa=x=>{const dd=MONTHLY[x];const cr=dd.tcan+dd.tvend;return cr>0?(dd.tcan/cr*100):0;};
+  const tasaTot=(tc+tv)>0?(tc/(tc+tv)*100):0;
+  const bpromAvg=n>0?ms.reduce((s,x)=>s+MONTHLY[x].bprom,0)/n:0;
+  const bestTasa=ms.reduce((b,x)=>tasa(x)>tasa(b)?x:b,ms[0]);
+  $('annTableWrap').innerHTML='<table class="ann-table"><thead><tr><th>Indicador</th>'+ms.map(x=>'<th>'+mesNom(x)+'</th>').join('')+'<th>Total/Prom.</th></tr></thead><tbody>'+
+    row('Total neto facturado',money('total'),fmt(tot),best('total'))+
+    row('Precio base (STickets)',money('precio'),fmt(pre),best('precio'))+
+    row('CxS (TFee)',money('cxs'),fmt(sum('cxs')),best('cxs'))+
+    row('SPAC (extFee2)',money('spac'),fmt(sum('spac')),best('spac'))+
+    row('ITBMS (extFee3)',money('itbms'),fmt(sum('itbms')),best('itbms'))+
+    row('Valor cancelado',money('vcCan'),fmt(can),best('vcCan'))+
+    row('Tickets pagados',cnt('tvend'),fmtn(tv),best('tvend'))+
+    row('Tickets cancelados',cnt('tcan'),fmtn(tc),best('tcan'))+
+    row('Tasa cancelacion %',ms.map(x=>tasa(x).toFixed(1)+'%'),tasaTot.toFixed(1)+'% prom.',bestTasa)+
+    row('Ticket promedio',ms.map(x=>'$'+MONTHLY[x].tprom.toFixed(2)),'$'+(tv>0?(tot/tv):0).toFixed(2)+' prom.',best('tprom'))+
+    row('Boletos por orden',ms.map(x=>MONTHLY[x].bprom.toFixed(2)),bpromAvg.toFixed(2)+' prom.',best('bprom'))+
+    row('Cortesias comerciales',cnt('cortCom'),fmtn(sum('cortCom')),best('cortCom'))+
+    row('Cortesias IV Juegos',ms.map(x=>MONTHLY[x].cortJuegos>0?fmtn(MONTHLY[x].cortJuegos):'&mdash;'),fmtn(sum('cortJuegos')),best('cortJuegos'))+
+    row('Eventos activos',cnt('eventos'),'&mdash;',best('eventos'))+
+    '</tbody></table>';
+}
 
-charts.anualBar=new Chart($('cAnualBar'),{
-  type:'bar',
-  data:{labels:['Enero','Febrero','Marzo','Abril','Mayo'],datasets:[
-    {label:'Vendidos',data:[19764,19440,24224,18262,6246],backgroundColor:MES_COLORS.map(c=>c+'cc'),borderRadius:4},
-    {label:'Cancelados',data:[785,660,2772,5376,920],backgroundColor:'rgba(240,72,74,0.75)',borderRadius:4}
-  ]},
-  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtn(c.raw)}}},
-    scales:{x:{ticks:TICK,grid:{display:false},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtn(v)},grid:{color:GRID},border:{display:false}}}}
-});
+function buildAnualCharts(){
+  ['anualLine','anualBar','anualPago','anualPagoLine'].forEach(k=>{if(charts[k]){charts[k].destroy();delete charts[k];}});
+  const ms=MESES();const labels=ms.map(mesNom);
 
-charts.anualPago=new Chart($('cAnualPago'),{
-  type:'bar',
-  data:{labels:PAGO_LABELS,datasets:[{label:'Total neto',data:PAGO_DATA,backgroundColor:PAGO_COLORS,borderRadius:4,borderSkipped:false}]},
-  options:{responsive:true,maintainAspectRatio:false,layout:{padding:{bottom:28}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},
-    scales:{x:{ticks:{...TICK,font:{family:'DM Sans',size:9},maxRotation:35,callback:function(val){const l=this.getLabelForValue(val);return l.length>10?l.substring(0,9)+'…':l;}},grid:{display:false},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
-});
+  charts.anualLine=new Chart($('cAnualLine'),{
+    type:'line',
+    data:{labels:labels,datasets:[
+      {label:'Total neto',data:ms.map(m=>MONTHLY[m].total),borderColor:'#3d8ef8',backgroundColor:'rgba(61,142,248,0.08)',fill:true,tension:0.35,pointRadius:5,borderWidth:2},
+      {label:'Precio base',data:ms.map(m=>MONTHLY[m].precio),borderColor:'#22c47a',backgroundColor:'rgba(34,196,122,0.06)',fill:true,tension:0.35,pointRadius:5,borderWidth:2}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+      scales:{x:{ticks:TICK,grid:{color:GRID},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
+  });
 
-$('pagoLegend').innerHTML=PAGO_POR_MES.datasets.map((d,i)=>'<div class="li"><span class="ld" style="background:'+pagoColors[i]+'"></span>'+d.label+'</div>').join('');
+  charts.anualBar=new Chart($('cAnualBar'),{
+    type:'bar',
+    data:{labels:labels,datasets:[
+      {label:'Vendidos',data:ms.map(m=>MONTHLY[m].tvend),backgroundColor:ms.map(m=>MES_COLORS[(m-1)%MES_COLORS.length]+'cc'),borderRadius:4},
+      {label:'Cancelados',data:ms.map(m=>MONTHLY[m].tcan),backgroundColor:'rgba(240,72,74,0.75)',borderRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtn(c.raw)}}},
+      scales:{x:{ticks:TICK,grid:{display:false},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtn(v)},grid:{color:GRID},border:{display:false}}}}
+  });
 
-charts.anualPagoLine=new Chart($('cAnualPagoLine'),{
-  type:'line',
-  data:{labels:PAGO_POR_MES.labels,datasets:PAGO_POR_MES.datasets.map((d,i)=>Object.assign({},d,{borderColor:pagoColors[i],backgroundColor:'transparent',tension:0.35,pointRadius:4,borderWidth:2}))},
-  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
-    scales:{x:{ticks:TICK,grid:{color:GRID},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
-});
+  charts.anualPago=new Chart($('cAnualPago'),{
+    type:'bar',
+    data:{labels:PAGO_LABELS,datasets:[{label:'Total neto',data:PAGO_DATA,backgroundColor:PAGO_COLORS,borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{bottom:28}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},
+      scales:{x:{ticks:{...TICK,font:{family:'DM Sans',size:9},maxRotation:35,callback:function(val){const l=this.getLabelForValue(val);return l.length>10?l.substring(0,9)+'…':l;}},grid:{display:false},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
+  });
+
+  $('pagoLegend').innerHTML=PAGO_POR_MES.datasets.map((d,i)=>'<div class="li"><span class="ld" style="background:'+pagoColors[i]+'"></span>'+d.label+'</div>').join('');
+
+  charts.anualPagoLine=new Chart($('cAnualPagoLine'),{
+    type:'line',
+    data:{labels:PAGO_POR_MES.labels,datasets:PAGO_POR_MES.datasets.map((d,i)=>Object.assign({},d,{borderColor:pagoColors[i],backgroundColor:'transparent',tension:0.35,pointRadius:4,borderWidth:2}))},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},
+      scales:{x:{ticks:TICK,grid:{color:GRID},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
+  });
+}
 
 // Initial render
+buildAnualCharts();
+renderAnual();
 renderResumen();
 renderEventos();
 renderEstatus();

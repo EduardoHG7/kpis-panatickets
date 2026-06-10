@@ -41,10 +41,12 @@ const _isJuegos = n => n && /IV JUEGOS|JUEGOS SURAMERICANOS/i.test(n);
 function processExcel(rows) {
   const sales  = rows.filter(r => r['Mes'] > 0);
   const cxRows = rows.filter(r => r['Mes'] === 0);
-  const MONTHS = [1, 2, 3, 4, 5];
+  // Meses detectados automaticamente en el Excel (soporta junio y siguientes)
+  const MONTHS = [...new Set(sales.map(r => r['Mes']).filter(m => m >= 1 && m <= 12))].sort((a, b) => a - b);
 
   // Agrupar cancelaciones por mes usando TransactionDate
-  const cancelByMes = {1:[], 2:[], 3:[], 4:[], 5:[]};
+  const cancelByMes = {};
+  MONTHS.forEach(m => cancelByMes[m] = []);
   cxRows.forEach(r => {
     const m = _toMonth(r.TransactionDate);
     if (cancelByMes[m]) cancelByMes[m].push(r);
@@ -233,7 +235,7 @@ function processExcel(rows) {
 
   const top5Pm = sortedPago.slice(0,5).map(p => p[0]);
   const pagoC  = ['#3d8ef8','#5ba3ff','#14c8b4','#9b6dff','#22c47a'];
-  PAGO_POR_MES.labels   = ['Enero','Febrero','Marzo','Abril','Mayo'];
+  PAGO_POR_MES.labels   = MONTHS.map(m => MES_NAMES[m] || ('Mes ' + m));
   PAGO_POR_MES.datasets = top5Pm.map((pm, i) => ({
     label: pm,
     data: MONTHS.map(m =>
@@ -245,6 +247,11 @@ function processExcel(rows) {
   }));
 
   // ── Re-render ─────────────────────────────────────────────────────────────────
+  const sbf = document.querySelector('.sidebar-footer');
+  if (sbf && MONTHS.length > 0) {
+    const maxM = Math.max(...MONTHS);
+    sbf.innerHTML = '<span class="dot"></span>Ene&ndash;' + (MES_NAMES[maxM] || ('Mes ' + maxM)).substring(0, 3) + ' 2026 &middot; ' + rows.length.toLocaleString('es-PA') + ' reg.';
+  }
   _refreshAnualCharts();
   const sec = document.querySelector('.section.active');
   if (sec) {
@@ -258,42 +265,8 @@ function processExcel(rows) {
 }
 
 function _refreshAnualCharts() {
-  const pagoC = ['#3d8ef8','#5ba3ff','#14c8b4','#9b6dff','#22c47a'];
-  ['anualLine','anualBar','anualPago','anualPagoLine'].forEach(k => {
-    if (charts[k]) { charts[k].destroy(); delete charts[k]; }
-  });
-
-  charts.anualLine = new Chart($('cAnualLine'), {
-    type:'line',
-    data:{labels:['Enero','Febrero','Marzo','Abril','Mayo'],datasets:[
-      {label:'Total neto', data:[1,2,3,4,5].map(m=>MONTHLY[m].total),  borderColor:'#3d8ef8',backgroundColor:'rgba(61,142,248,0.08)',fill:true,tension:0.35,pointRadius:5,borderWidth:2},
-      {label:'Precio base',data:[1,2,3,4,5].map(m=>MONTHLY[m].precio), borderColor:'#22c47a',backgroundColor:'rgba(34,196,122,0.06)',fill:true,tension:0.35,pointRadius:5,borderWidth:2}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{x:{ticks:TICK,grid:{color:GRID},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
-  });
-
-  charts.anualBar = new Chart($('cAnualBar'), {
-    type:'bar',
-    data:{labels:['Enero','Febrero','Marzo','Abril','Mayo'],datasets:[
-      {label:'Vendidos',  data:[1,2,3,4,5].map(m=>MONTHLY[m].tvend), backgroundColor:['#3d8ef8cc','#14c8b4cc','#f5a623cc','#9b6dffcc','#22c47acc'],borderRadius:4},
-      {label:'Cancelados',data:[1,2,3,4,5].map(m=>MONTHLY[m].tcan),  backgroundColor:'rgba(240,72,74,0.75)',borderRadius:4}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtn(c.raw)}}},scales:{x:{ticks:TICK,grid:{display:false},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtn(v)},grid:{color:GRID},border:{display:false}}}}
-  });
-
-  charts.anualPago = new Chart($('cAnualPago'), {
-    type:'bar',
-    data:{labels:PAGO_LABELS,datasets:[{label:'Total neto',data:PAGO_DATA,backgroundColor:PAGO_COLORS,borderRadius:4,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{bottom:28}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{ticks:{...TICK,font:{family:'DM Sans',size:9},maxRotation:35,callback:function(val){const l=this.getLabelForValue(val);return l.length>10?l.substring(0,9)+'…':l;}},grid:{display:false},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
-  });
-
-  document.getElementById('pagoLegend').innerHTML = PAGO_POR_MES.datasets
-    .map((d,i) => '<div class="li"><span class="ld" style="background:'+pagoC[i]+'"></span>'+d.label+'</div>')
-    .join('');
-
-  charts.anualPagoLine = new Chart($('cAnualPagoLine'), {
-    type:'line',
-    data:{labels:PAGO_POR_MES.labels,datasets:PAGO_POR_MES.datasets.map((d,i)=>Object.assign({},d,{borderColor:pagoC[i],backgroundColor:'transparent',tension:0.35,pointRadius:4,borderWidth:2}))},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.raw)}}},scales:{x:{ticks:TICK,grid:{color:GRID},border:{display:false}},y:{ticks:{...TICK,callback:v=>fmtK(v)},grid:{color:GRID},border:{display:false}}}}
-  });
+  // Las graficas anuales y la tabla comparativa se reconstruyen desde MONTHLY
+  // con los meses que existan (definidas en app.js)
+  buildAnualCharts();
+  renderAnual();
 }

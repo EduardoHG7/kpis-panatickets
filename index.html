@@ -202,17 +202,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 <!-- ANUAL -->
 <section id="anual" class="section active">
   <div class="page-header">
-    <div><h1 class="page-title">Resumen <em>Anual 2026</em></h1><p class="page-meta">Enero &ndash; Mayo 2026 &middot; Consolidado de 5 meses</p></div>
+    <div><h1 class="page-title">Resumen <em>Anual 2026</em></h1><p class="page-meta" id="anualMeta">Consolidado anual</p></div>
   </div>
-  <div class="kpi-grid kpi-grid-4">
-    <div class="kpi-card kc-a"><div class="kpi-label">Total facturado neto (5 meses)</div><div class="kpi-value">$2.86<span>M</span></div><div class="kpi-sub">Ventas &minus; Cancelaciones</div></div>
-    <div class="kpi-card kc-g"><div class="kpi-label">Precio base neto acumulado</div><div class="kpi-value">$2.32<span>M</span></div><div class="kpi-sub">STickets neto Ene&ndash;May 2026</div></div>
-    <div class="kpi-card kc-r"><div class="kpi-label">Total cancelaciones</div><div class="kpi-value">$703<span>K</span></div><div class="kpi-sub">10,513 tickets cancelados</div></div>
-    <div class="kpi-card kc-t"><div class="kpi-label">Tickets pagados</div><div class="kpi-value">87,936</div><div class="kpi-sub">Precio &gt; $0 &middot; ventas confirmadas</div></div>
-  </div>
+  <div class="kpi-grid kpi-grid-4" id="anualKpis"></div>
   <div class="chart-grid cg2">
     <div class="chart-card">
-      <div class="cch"><div><div class="cct">Evolucion mensual &mdash; Total facturado</div><div class="ccs">Comparativa de los 5 meses</div></div>
+      <div class="cch"><div><div class="cct">Evolucion mensual &mdash; Total facturado</div><div class="ccs">Comparativa mensual</div></div>
         <div class="legend"><div class="li"><span class="ld" style="background:#3d8ef8"></span>Total neto</div><div class="li"><span class="ld" style="background:#22c47a"></span>Precio base</div></div>
       </div>
       <div style="height:220px;position:relative"><canvas id="cAnualLine"></canvas></div>
@@ -226,32 +221,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   </div>
   <div class="chart-card" style="margin-bottom:16px">
     <div class="cch"><div><div class="cct">Resumen comparativo mensual</div><div class="ccs">Todos los indicadores clave</div></div></div>
-    <div style="overflow-x:auto">
-    <table class="ann-table">
-      <thead><tr><th>Indicador</th><th>Enero</th><th>Febrero</th><th>Marzo</th><th>Abril</th><th>Mayo</th><th>Total/Prom.</th></tr></thead>
-      <tbody>
-        <tr><td>Total neto facturado</td><td>$488,416</td><td>$460,930</td><td class="best">$1,253,995</td><td>$416,447</td><td>$244,841</td><td>$2,864,629</td></tr>
-        <tr><td>Precio base (STickets)</td><td>$403,794</td><td>$380,825</td><td class="best">$991,075</td><td>$340,738</td><td>$208,463</td><td>$2,324,895</td></tr>
-        <tr><td>CxS (TFee)</td><td>$46,506</td><td>$48,238</td><td class="best">$168,623</td><td>$54,388</td><td>$22,934</td><td>$340,689</td></tr>
-        <tr><td>SPAC (extFee2)</td><td>$10,955</td><td>$7,292</td><td class="best">$34,523</td><td>$2,463</td><td>$3,049</td><td>$58,282</td></tr>
-        <tr><td>ITBMS (extFee3)</td><td>$27,162</td><td>$24,575</td><td class="best">$59,773</td><td>$18,857</td><td>$10,395</td><td>$140,762</td></tr>
-        <tr><td>Valor cancelado</td><td>$12,438</td><td>$30,897</td><td>$150,620</td><td class="best">$430,908</td><td>$78,348</td><td>$703,211</td></tr>
-        <tr><td>Tickets pagados</td><td>19,764</td><td>19,440</td><td class="best">24,224</td><td>18,262</td><td>6,246</td><td>87,936</td></tr>
-        <tr><td>Tickets cancelados</td><td>785</td><td>660</td><td>2,772</td><td class="best">5,376</td><td>920</td><td>10,513</td></tr>
-        <tr><td>Tasa cancelacion %</td><td>3.8%</td><td>3.3%</td><td>10.3%</td><td class="best">22.7%</td><td>12.8%</td><td>10.6% prom.</td></tr>
-        <tr><td>Ticket promedio</td><td>$24.71</td><td>$23.71</td><td class="best">$51.77</td><td>$22.80</td><td>$39.20</td><td>$32.44 prom.</td></tr>
-        <tr><td>Boletos por orden</td><td>1.91</td><td>2.03</td><td class="best">2.54</td><td>2.18</td><td>2.36</td><td>2.20 prom.</td></tr>
-        <tr><td>Cortesias comerciales</td><td>11,302</td><td>10,862</td><td>26,954</td><td class="best">17,644</td><td>9,041</td><td>75,803</td></tr>
-        <tr><td>Cortesias IV Juegos</td><td>&mdash;</td><td>&mdash;</td><td>18,492</td><td class="best">71,325</td><td>&mdash;</td><td>89,817</td></tr>
-        <tr><td>Eventos activos</td><td>46</td><td>57</td><td class="best">110</td><td>94</td><td>54</td><td>&mdash;</td></tr>
-        <tr><td><strong>Total neto</strong></td><td><strong>$488K</strong></td><td><strong>$461K</strong></td><td><strong>$1.25M</strong></td><td><strong>$416K</strong></td><td><strong>$245K</strong></td><td><strong>$2.86M</strong></td></tr>
-      </tbody>
-    </table>
-    </div>
+    <div style="overflow-x:auto" id="annTableWrap"></div>
   </div>
   <div class="chart-grid cg2">
     <div class="chart-card">
-      <div class="cch"><div><div class="cct">Top metodos de pago &mdash; Acumulado anual</div><div class="ccs">Valor neto Ene&ndash;May 2026</div></div></div>
+      <div class="cch"><div><div class="cct">Top metodos de pago &mdash; Acumulado anual</div><div class="ccs">Valor neto acumulado 2026</div></div></div>
       <div style="height:220px;position:relative"><canvas id="cAnualPago"></canvas></div>
     </div>
     <div class="chart-card">
@@ -272,6 +246,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <button class="ms-btn" onclick="selMes('resumen',3,this)">Marzo</button>
       <button class="ms-btn" onclick="selMes('resumen',4,this)">Abril</button>
       <button class="ms-btn" onclick="selMes('resumen',5,this)">Mayo</button>
+      <button class="ms-btn" onclick="selMes('resumen',6,this)">Junio</button>
     </div>
   </div>
   <div class="compare-bar">
@@ -282,6 +257,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <button class="cmp-btn" id="cmp3" onclick="toggleCmp(3)">Marzo</button>
     <button class="cmp-btn" id="cmp4" onclick="toggleCmp(4)">Abril</button>
     <button class="cmp-btn" id="cmp5" onclick="toggleCmp(5)">Mayo</button>
+    <button class="cmp-btn" id="cmp6" onclick="toggleCmp(6)">Junio</button>
   </div>
   <div id="rKpis"></div>
   <div class="chart-grid cg3">
@@ -314,6 +290,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <button class="ms-btn" onclick="selMes('eventos',3,this)">Marzo</button>
       <button class="ms-btn" onclick="selMes('eventos',4,this)">Abril</button>
       <button class="ms-btn" onclick="selMes('eventos',5,this)">Mayo</button>
+      <button class="ms-btn" onclick="selMes('eventos',6,this)">Junio</button>
     </div>
   </div>
   <div class="chart-card" style="margin-bottom:16px">
@@ -336,6 +313,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <button class="ms-btn" onclick="selMes('estatus',3,this)">Marzo</button>
       <button class="ms-btn" onclick="selMes('estatus',4,this)">Abril</button>
       <button class="ms-btn" onclick="selMes('estatus',5,this)">Mayo</button>
+      <button class="ms-btn" onclick="selMes('estatus',6,this)">Junio</button>
     </div>
   </div>
   <div class="chart-grid cg2" style="margin-bottom:16px">
@@ -368,6 +346,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <button class="ms-btn" onclick="selMes('tiempo',3,this)">Marzo</button>
       <button class="ms-btn" onclick="selMes('tiempo',4,this)">Abril</button>
       <button class="ms-btn" onclick="selMes('tiempo',5,this)">Mayo</button>
+      <button class="ms-btn" onclick="selMes('tiempo',6,this)">Junio</button>
     </div>
   </div>
   <div class="chart-card" style="margin-bottom:16px">
@@ -404,6 +383,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <button class="ms-btn" onclick="selMes('conclusiones',3,this)">Marzo</button>
       <button class="ms-btn" onclick="selMes('conclusiones',4,this)">Abril</button>
       <button class="ms-btn" onclick="selMes('conclusiones',5,this)">Mayo</button>
+      <button class="ms-btn" onclick="selMes('conclusiones',6,this)">Junio</button>
     </div>
   </div>
   <div id="concContent"></div>
@@ -442,8 +422,8 @@ const fmtK=v=>v>=1e6?'$'+(v/1e6).toFixed(2)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K
 const fmtn=v=>Number(v).toLocaleString('es-PA');
 const GRID='rgba(255,255,255,0.05)';
 const TICK={color:'#8892aa',font:{family:'DM Sans',size:11}};
-const MES_NAMES=['','Enero','Febrero','Marzo','Abril','Mayo'];
-const MES_COLORS=['#3d8ef8','#14c8b4','#f5a623','#9b6dff','#22c47a'];
+const MES_NAMES=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MES_COLORS=['#3d8ef8','#14c8b4','#f5a623','#9b6dff','#22c47a','#f06292','#5ba3ff','#ff8a65','#80cbc4','#ce93d8','#90caf9','#ef9a9a'];
 const MONTHLY={
   1:{precio:403794,cxs:46506,spac:10955,itbms:27162,total:488416,tvend:19764,vcVend:488416,tcan:785,vcCan:12438,cortCom:11302,cortJuegos:0,eventos:46,tprom:24.71,bprom:1.91},
   2:{precio:380825,cxs:48238,spac:7292,itbms:24575,total:460930,tvend:19440,vcVend:460930,tcan:660,vcCan:30897,cortCom:10862,cortJuegos:0,eventos:57,tprom:23.71,bprom:2.03},
@@ -505,12 +485,12 @@ const KPI_DRILLDOWN={
   5:{total:[{e:"KANY GARCIA",v:84000},{e:"SON MISERABLES",v:46386},{e:"ANNIE EL MUSICAL",v:38991},{e:"RAWAYANA",v:23278},{e:"EL CORSARIO",v:20369},{e:"CUMBIA HOUSE",v:15504},{e:"CHRISTINE D CLAIRO",v:11166},{e:"FOUNDERS CLUB",v:10732},{e:"FUTTURA TINI",v:9225},{e:"500 KM PANAMA",v:5406}],precio:[{e:"KANY GARCIA",v:67870},{e:"SON MISERABLES",v:41235},{e:"ANNIE EL MUSICAL",v:34740},{e:"EL CORSARIO",v:18380},{e:"RAWAYANA",v:17893},{e:"CUMBIA HOUSE",v:12615},{e:"FOUNDERS CLUB",v:9610},{e:"CHRISTINE D CLAIRO",v:9090},{e:"FUTTURA TINI",v:7505},{e:"500 KM PANAMA",v:4736}],tvend:[{e:"EL CORSARIO",v:3806},{e:"ANNIE EL MUSICAL",v:1775},{e:"KANY GARCIA",v:1472},{e:"CARRERAS NOCTURNAS MAYO",v:1368},{e:"MOTOVELOCIDAD MAYO",v:1094},{e:"FESTIVAL CIRCO",v:734},{e:"SON MISERABLES",v:692},{e:"CUMBIA HOUSE",v:597},{e:"RAWAYANA",v:373},{e:"DESIERTO",v:249}],tcan:[{e:"EL CORSARIO",v:140},{e:"ANNIE EL MUSICAL",v:101},{e:"FESTIVAL CIRCO",v:60},{e:"KANY GARCIA",v:45},{e:"CUMBIA HOUSE",v:40},{e:"RAWAYANA",v:35},{e:"FUTTURA TINI",v:12},{e:"SON MISERABLES",v:9},{e:"FOUNDERS CLUB",v:0},{e:"500 KM PANAMA",v:0}],cort:[{e:"EL CORSARIO",v:3328},{e:"CARRERAS NOCTURNAS MAYO",v:1204},{e:"MOTOVELOCIDAD MAYO",v:1064},{e:"ANNIE EL MUSICAL",v:770},{e:"FESTIVAL CIRCO",v:636},{e:"CUMBIA HOUSE",v:436},{e:"FOUNDERS CLUB",v:120},{e:"MUSICALION",v:173},{e:"FUTTURA TINI",v:82},{e:"RAWAYANA",v:35}],cort_j:[]}
 };
 const CONCLUSIONES={
-  0:{title:"Resumen Anual 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:".86M facturados en 5 meses",body:"Enero-Mayo 2026 genero ,864,629 en facturacion neta. Marzo fue el mes record con .25M impulsado por Rawayana."},{num:"02",tag:"ct-w",tagTxt:"Riesgo",title:"Rawayana concentra el 29% del revenue anual",body:"Un solo evento genero  de .86M acumulados. Esta concentracion en un artista es el mayor riesgo estrategico del periodo."},{num:"03",tag:"ct-w",tagTxt:"Cancelaciones",title:" en cancelaciones - 24.6% del bruto",body:"Las cancelaciones acumuladas suman 10,513 tickets y . Abril concentra el 61% de este valor ()."},{num:"04",tag:"ct-ok",tagTxt:"Positivo",title:"Ticket promedio saludable: .44 promedio",body:"El ticket promedio consolidado del periodo es .44, con Marzo liderando a .77 por eventos de alta gama."}]},
-  1:{title:"Conclusiones Enero 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:" neto en Enero",body:"El mes abrio con 46 eventos y ,416 en facturacion neta. Kany Garcia lidera con  seguido de Micro Brew Fest con ."},{num:"02",tag:"ct-ok",tagTxt:"Positivo",title:"Tasa de cancelacion 3.8% - la mas baja del periodo",body:"Solo 785 tickets cancelados (,438). Enero tiene el mejor comportamiento de retencion del periodo."},{num:"03",tag:"ct-a",tagTxt:"Patron",title:"Ticket promedio .71",body:"El ticket promedio mas bajo del ano refleja una mezcla de eventos de precio medio."}]},
-  2:{title:"Conclusiones Febrero 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:" neto - mes mas diversificado",body:"57 eventos activos y ,930 en facturacion neta. Micro Brew Fest lidera con ."},{num:"02",tag:"ct-w",tagTxt:"Cancelaciones",title:".9K cancelado - NASCAR concentra .5K",body:"Nations Panama City NASCAR concentra el 82% del valor cancelado del mes (287 tickets)."},{num:"03",tag:"ct-ok",tagTxt:"Positivo",title:"Mayor numero de eventos activos: 57",body:"Febrero tiene la mayor diversificacion de portafolio del periodo."}]},
-  3:{title:"Conclusiones Marzo 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Record",title:".25M neto - mes record",body:"110 eventos activos. Rawayana genera  (67% del total del mes). El 24 de marzo fue el dia de mayor venta de todo el periodo."},{num:"02",tag:"ct-w",tagTxt:"Riesgo critico",title:"Matan Baseters:  cancelado en Marzo",body:"353 cancelaciones de Matan Baseters representan el 55% del valor cancelado de Marzo ( total)."},{num:"03",tag:"ct-a",tagTxt:"IV Juegos",title:"18,492 cortesias de Juegos Suramericanos",body:"Marzo marca el inicio del procesamiento masivo de entradas para los IV Juegos."}]},
-  4:{title:"Conclusiones Abril 2026",items:[{num:"01",tag:"ct-w",tagTxt:"Cancelaciones criticas",title:" cancelado - el mayor del periodo",body:"Abril tiene el mayor valor cancelado con 5,376 tickets. Matan Baseters () y Grupo Frontera () concentran el 74%."},{num:"02",tag:"ct-i",tagTxt:"IV Juegos",title:"71,325 cortesias - pico operativo",body:"Abril proceso el mayor volumen de cortesias IV Juegos del periodo, validando la capacidad logistica de Panatickets."},{num:"03",tag:"ct-ok",tagTxt:"Positivo",title:"Ticket promedio .80 con portafolio diversificado",body:"94 eventos activos con revenue mejor distribuido que Marzo. Futtura-TINI lidera con ."}]},
-  5:{title:"Conclusiones Mayo 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:" neto con portafolio diversificado",body:"54 eventos activos. Kany Garcia lidera con  (34% del total). Sin dependencia extrema de un solo evento."},{num:"02",tag:"ct-w",tagTxt:"Cancelaciones",title:"Grupo Frontera:  en cancelaciones (79% del total)",body:"451 cancelaciones de Grupo Frontera Tour dominan el mes. Patron que se repite en multiples meses del ano."},{num:"03",tag:"ct-ok",tagTxt:"Mejor",title:"Ticket promedio mas alto tras Marzo: .20",body:"El segundo ticket promedio mas alto del periodo, impulsado por eventos premium como Kany Garcia y Son Miserables."}]}
+  0:{title:"Resumen Anual 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:"$2.86M facturados en 5 meses",body:"Enero-Mayo 2026 genero $2,864,629 en facturacion neta. Marzo fue el mes record con $1.25M impulsado por Rawayana."},{num:"02",tag:"ct-w",tagTxt:"Riesgo",title:"Rawayana concentra el 29% del revenue anual",body:"Un solo evento genero $839K de $2.86M acumulados. Esta concentracion en un artista es el mayor riesgo estrategico del periodo."},{num:"03",tag:"ct-w",tagTxt:"Cancelaciones",title:"$703K en cancelaciones - 24.6% del bruto",body:"Las cancelaciones acumuladas suman 10,513 tickets y $703,211. Abril concentra el 61% de este valor ($431K)."},{num:"04",tag:"ct-ok",tagTxt:"Positivo",title:"Ticket promedio saludable: $32.44 promedio",body:"El ticket promedio consolidado del periodo es $32.44, con Marzo liderando a $51.77 por eventos de alta gama."}]},
+  1:{title:"Conclusiones Enero 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:"$488K neto en Enero",body:"El mes abrio con 46 eventos y $488,416 en facturacion neta. Kany Garcia lidera con $103K seguido de Micro Brew Fest con $90K."},{num:"02",tag:"ct-ok",tagTxt:"Positivo",title:"Tasa de cancelacion 3.8% - la mas baja del periodo",body:"Solo 785 tickets cancelados ($12,438). Enero tiene el mejor comportamiento de retencion del periodo."},{num:"03",tag:"ct-a",tagTxt:"Patron",title:"Ticket promedio $24.71",body:"El ticket promedio mas bajo del ano refleja una mezcla de eventos de precio medio."}]},
+  2:{title:"Conclusiones Febrero 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:"$461K neto - mes mas diversificado",body:"57 eventos activos y $460,930 en facturacion neta. Micro Brew Fest lidera con $91K."},{num:"02",tag:"ct-w",tagTxt:"Cancelaciones",title:"$30.9K cancelado - NASCAR concentra $25.5K",body:"Nations Panama City NASCAR concentra el 82% del valor cancelado del mes (287 tickets)."},{num:"03",tag:"ct-ok",tagTxt:"Positivo",title:"Mayor numero de eventos activos: 57",body:"Febrero tiene la mayor diversificacion de portafolio del periodo."}]},
+  3:{title:"Conclusiones Marzo 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Record",title:"$1.25M neto - mes record",body:"110 eventos activos. Rawayana genera $765K (67% del total del mes). El 24 de marzo fue el dia de mayor venta de todo el periodo."},{num:"02",tag:"ct-w",tagTxt:"Riesgo critico",title:"Matan Baseters: $82K cancelado en Marzo",body:"353 cancelaciones de Matan Baseters representan el 55% del valor cancelado de Marzo ($151K total)."},{num:"03",tag:"ct-a",tagTxt:"IV Juegos",title:"18,492 cortesias de Juegos Suramericanos",body:"Marzo marca el inicio del procesamiento masivo de entradas para los IV Juegos."}]},
+  4:{title:"Conclusiones Abril 2026",items:[{num:"01",tag:"ct-w",tagTxt:"Cancelaciones criticas",title:"$431K cancelado - el mayor del periodo",body:"Abril tiene el mayor valor cancelado con 5,376 tickets. Matan Baseters ($223K) y Grupo Frontera ($97K) concentran el 74%."},{num:"02",tag:"ct-i",tagTxt:"IV Juegos",title:"71,325 cortesias - pico operativo",body:"Abril proceso el mayor volumen de cortesias IV Juegos del periodo, validando la capacidad logistica de Panatickets."},{num:"03",tag:"ct-ok",tagTxt:"Positivo",title:"Ticket promedio $22.80 con portafolio diversificado",body:"94 eventos activos con revenue mejor distribuido que Marzo. Futtura-TINI lidera con $264K."}]},
+  5:{title:"Conclusiones Mayo 2026",items:[{num:"01",tag:"ct-i",tagTxt:"Rendimiento",title:"$245K neto con portafolio diversificado",body:"54 eventos activos. Kany Garcia lidera con $84K (34% del total). Sin dependencia extrema de un solo evento."},{num:"02",tag:"ct-w",tagTxt:"Cancelaciones",title:"Grupo Frontera: $62K en cancelaciones (79% del total)",body:"451 cancelaciones de Grupo Frontera Tour dominan el mes. Patron que se repite en multiples meses del ano."},{num:"03",tag:"ct-ok",tagTxt:"Mejor",title:"Ticket promedio mas alto tras Marzo: $39.20",body:"El segundo ticket promedio mas alto del periodo, impulsado por eventos premium como Kany Garcia y Son Miserables."}]}
 };
 </script>
 <script>
