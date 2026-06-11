@@ -10,21 +10,37 @@ function handleFileSelect(evt) {
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      const wb   = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:0});
-      processExcel(rows);
-      btn.innerHTML = '✅ Datos actualizados';
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      // Leer TODAS las hojas que tengan columnas de transacciones
+      // (antes solo se leia la primera hoja y se perdian datos en otras)
+      let rows = [];
+      const sheetInfo = [];
+      wb.SheetNames.forEach(name => {
+        const r = XLSX.utils.sheet_to_json(wb.Sheets[name], {defval:0});
+        const cols = r.length ? Object.keys(r[0]) : [];
+        const ok = cols.includes('TransactionDate') || cols.includes('Mes');
+        sheetInfo.push(name + (ok ? ' ✓' : ' ✗') + ' (' + r.length + ' filas)');
+        if (ok) rows = rows.concat(r);
+      });
+      console.log('[Updater] Hojas: ' + sheetInfo.join(' | '));
+      if (rows.length === 0) {
+        throw new Error('Ninguna hoja del Excel tiene columnas "Mes" o "TransactionDate". Hojas: ' + sheetInfo.join(', '));
+      }
+      const info = processExcel(rows);
+      const mesesTxt = info.months.map(m => (MES_NAMES[m] || m).toString().substring(0, 3)).join(', ');
+      btn.innerHTML = '✅ ' + info.sales.toLocaleString('es-PA') + ' filas · ' + mesesTxt;
       btn.setAttribute('style', '--upload-ok:1');
       btn.classList.add('upload-ok');
       setTimeout(() => {
         btn.textContent = '📂 Actualizar datos';
         btn.classList.remove('upload-ok');
         btn.disabled = false;
-      }, 3500);
+      }, 6000);
     } catch(err) {
       btn.textContent = '❌ Error al procesar';
       btn.disabled = false;
       console.error('[Updater] Error:', err);
+      alert('Error al procesar el Excel:\n\n' + err.message);
     }
   };
   reader.readAsArrayBuffer(file);
@@ -32,17 +48,48 @@ function handleFileSelect(evt) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-const _toMonth  = s => new Date((s - 25569) * 86400000).getMonth() + 1;
-const _toDay    = s => new Date((s - 25569) * 86400000).getDate();
-const _toHour   = s => Math.floor((s % 1) * 24);
+// Acepta fechas como numero serial de Excel, objeto Date o texto
+const _toDate = v => {
+  if (v === null || v === undefined || v === '' || v === 0) return null;
+  if (typeof v === 'number') return new Date((v - 25569) * 86400000);
+  if (v instanceof Date) return v;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+};
+const _toMonth  = v => { const d = _toDate(v); return d ? d.getMonth() + 1 : 0; };
+const _toDay    = v => { const d = _toDate(v); return d ? d.getDate() : 0; };
+const _toHour   = v => {
+  if (typeof v === 'number') return Math.floor((v % 1) * 24);
+  const d = _toDate(v);
+  return d ? d.getHours() : 0;
+};
 const _sumF     = (arr, f) => arr.reduce((t, r) => t + (r[f] || 0), 0);
 const _isJuegos = n => n && /IV JUEGOS|JUEGOS SURAMERICANOS/i.test(n);
 
 function processExcel(rows) {
+  // Normalizar 'Mes': si una fila de venta no lo trae (o viene como texto),
+  // derivarlo de TransactionDate para no perderla
+  const MES_TXT = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+  rows.forEach(r => {
+    let m = r['Mes'];
+    if (typeof m === 'string') {
+      const t = m.trim().toLowerCase();
+      m = MES_TXT[t] !== undefined ? MES_TXT[t] : parseInt(t, 10);
+      r['Mes'] = isNaN(m) ? 0 : m;
+    }
+    const esVenta = (r.STotal > 0) || (r.STickets > 0) || (r.SQty > 0 && !(r.CQty > 0));
+    if (!(r['Mes'] >= 1) && esVenta && r.TransactionDate) {
+      r['Mes'] = _toMonth(r.TransactionDate);
+    }
+  });
   const sales  = rows.filter(r => r['Mes'] > 0);
-  const cxRows = rows.filter(r => r['Mes'] === 0);
+  const cxRows = rows.filter(r => !(r['Mes'] > 0));
   // Meses detectados automaticamente en el Excel (soporta junio y siguientes)
-  const MONTHS = [...new Set(sales.map(r => r['Mes']).filter(m => m >= 1 && m <= 12))].sort((a, b) => a - b);
+  const MONTHS = [...new Set(sales.map(r => Number(r['Mes'])).filter(m => m >= 1 && m <= 12))].sort((a, b) => a - b);
+  console.log('[Updater] Filas de venta: ' + sales.length + ' · cancelaciones: ' + cxRows.length + ' · meses detectados: ' + MONTHS.join(','));
+  if (MONTHS.length === 0) {
+    throw new Error('No se detecto ningun mes en la columna "Mes" ni en "TransactionDate". Revisa que el Excel tenga el mismo formato que el original.');
+  }
 
   // Agrupar cancelaciones por mes usando TransactionDate
   const cancelByMes = {};
@@ -262,6 +309,8 @@ function processExcel(rows) {
     else if (id === 'tiempo')      renderTiempo();
     else if (id === 'conclusiones') renderConclusiones();
   }
+
+  return { months: MONTHS, sales: sales.length, cancels: cxRows.length };
 }
 
 function _refreshAnualCharts() {
