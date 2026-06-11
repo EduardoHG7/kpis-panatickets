@@ -48,12 +48,38 @@ function handleFileSelect(evt) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-// Acepta fechas como numero serial de Excel, objeto Date o texto
+// Convierte montos/cantidades que vienen como texto ("1,234.56", "$500") a numero
+const _num = v => {
+  if (typeof v === 'number') return v;
+  if (v === null || v === undefined || v === '') return 0;
+  let s = v.toString().trim().replace(/[$\s]/g, '');
+  if (/,\d{1,2}$/.test(s)) s = s.replace(/\./g, '').replace(',', '.'); // 1.234,56
+  else s = s.replace(/,/g, '');                                        // 1,234.56
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+};
+// Acepta fechas como numero serial de Excel, objeto Date o texto.
+// Para texto tipo "12/06/2026" asume dia/mes/anio (formato Panama),
+// salvo que el segundo numero no pueda ser mes
 const _toDate = v => {
   if (v === null || v === undefined || v === '' || v === 0) return null;
   if (typeof v === 'number') return new Date((v - 25569) * 86400000);
   if (v instanceof Date) return v;
-  const d = new Date(v);
+  const s = v.toString().trim();
+  const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?\s*([ap])?\.?m?\.?)?$/i);
+  if (m) {
+    let day = parseInt(m[1], 10), mon = parseInt(m[2], 10);
+    let y = parseInt(m[3], 10); if (y < 100) y += 2000;
+    if (mon > 12 && day <= 12) { const t = day; day = mon; mon = t; } // era mes/dia
+    if (mon > 12 || day > 31) return null;
+    let hh = m[4] ? parseInt(m[4], 10) : 0;
+    const mi = m[5] ? parseInt(m[5], 10) : 0, ss = m[6] ? parseInt(m[6], 10) : 0;
+    if (m[7] && /p/i.test(m[7]) && hh < 12) hh += 12;
+    if (m[7] && /a/i.test(m[7]) && hh === 12) hh = 0;
+    const d = new Date(y, mon - 1, day, hh, mi, ss);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(s);
   return isNaN(d.getTime()) ? null : d;
 };
 const _toMonth  = v => { const d = _toDate(v); return d ? d.getMonth() + 1 : 0; };
@@ -74,6 +100,10 @@ function processExcel(rows) {
   // Clasificar venta vs cancelacion: TransactionType (Sale/Refund) es lo mas
   // confiable; si no existe, usar los campos C* como en el formato original
   const _esCancel = r => r.TransactionType ? /refund|cancel/i.test(r.TransactionType) : ((r.CQty > 0 || Math.abs(r.CTotal || 0) > 0) && !(r.STotal > 0));
+  // Normalizar campos numericos: algunos exports los traen como texto y al
+  // sumarlos se concatenan (produce NaN, $0 o totales gigantes)
+  const NUM_FIELDS = ['SQty','STickets','SFees','TFee','extFee2','extFee3','OrderFee','STax','STotal','CQty','CTickets','CFees','CTFee','CextFee2','CextFee3','COrderFee','CTax','CTotal','Total'];
+  rows.forEach(r => { NUM_FIELDS.forEach(f => { if (f in r) r[f] = _num(r[f]); }); });
   rows.forEach(r => {
     let m = r['Mes'];
     if (typeof m === 'string') {
