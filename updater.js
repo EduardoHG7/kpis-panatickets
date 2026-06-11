@@ -67,9 +67,13 @@ const _sumF     = (arr, f) => arr.reduce((t, r) => t + (r[f] || 0), 0);
 const _isJuegos = n => n && /IV JUEGOS|JUEGOS SURAMERICANOS/i.test(n);
 
 function processExcel(rows) {
-  // Normalizar 'Mes': si una fila de venta no lo trae (o viene como texto),
-  // derivarlo de TransactionDate para no perderla
   const MES_TXT = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+  // Una fecha solo es usable si trae anio real; el export crudo del sistema
+  // a veces guarda solo la hora en TransactionDate (fraccion < 1)
+  const _plausible = v => { const d = _toDate(v); return (d && d.getFullYear() >= 2020 && d.getFullYear() <= 2100) ? d : null; };
+  // Clasificar venta vs cancelacion: TransactionType (Sale/Refund) es lo mas
+  // confiable; si no existe, usar los campos C* como en el formato original
+  const _esCancel = r => r.TransactionType ? /refund|cancel/i.test(r.TransactionType) : ((r.CQty > 0 || Math.abs(r.CTotal || 0) > 0) && !(r.STotal > 0));
   rows.forEach(r => {
     let m = r['Mes'];
     if (typeof m === 'string') {
@@ -77,25 +81,42 @@ function processExcel(rows) {
       m = MES_TXT[t] !== undefined ? MES_TXT[t] : parseInt(t, 10);
       r['Mes'] = isNaN(m) ? 0 : m;
     }
-    const esVenta = (r.STotal > 0) || (r.STickets > 0) || (r.SQty > 0 && !(r.CQty > 0));
-    if (!(r['Mes'] >= 1) && esVenta && r.TransactionDate) {
-      r['Mes'] = _toMonth(r.TransactionDate);
+    if (!(r['Mes'] >= 1)) {
+      const d = _plausible(r.TransactionDate);
+      if (d) r['Mes'] = d.getMonth() + 1;
     }
+    r._cancel = _esCancel(r);
   });
-  const sales  = rows.filter(r => r['Mes'] > 0);
-  const cxRows = rows.filter(r => !(r['Mes'] > 0));
+
+  // Si hay ventas sin mes identificable (export crudo sin columna "Mes" y sin
+  // fecha valida), preguntar al usuario a que mes corresponde el archivo
+  const sinMes = rows.filter(r => !r._cancel && !(r['Mes'] >= 1) && ((r.STotal > 0) || (r.SQty > 0)));
+  if (sinMes.length > 0) {
+    const resp = prompt(
+      'El Excel tiene ' + sinMes.length.toLocaleString('es-PA') + ' filas de venta sin columna "Mes" ni fecha valida.\n\n' +
+      'Si TODO el archivo corresponde a un solo mes, escribe el numero del mes (1=Enero ... 12=Diciembre).\n' +
+      'Deja vacio o cancela para omitir esas filas.', '');
+    const mFix = parseInt(resp, 10);
+    if (mFix >= 1 && mFix <= 12) {
+      rows.forEach(r => { if (!(r['Mes'] >= 1)) r['Mes'] = mFix; });
+    }
+  }
+
+  const sales  = rows.filter(r => !r._cancel && r['Mes'] >= 1);
+  const cxRows = rows.filter(r => r._cancel);
   // Meses detectados automaticamente en el Excel (soporta junio y siguientes)
   const MONTHS = [...new Set(sales.map(r => Number(r['Mes'])).filter(m => m >= 1 && m <= 12))].sort((a, b) => a - b);
   console.log('[Updater] Filas de venta: ' + sales.length + ' · cancelaciones: ' + cxRows.length + ' · meses detectados: ' + MONTHS.join(','));
   if (MONTHS.length === 0) {
-    throw new Error('No se detecto ningun mes en la columna "Mes" ni en "TransactionDate". Revisa que el Excel tenga el mismo formato que el original.');
+    throw new Error('No se pudo determinar el mes de ninguna fila: el Excel no tiene columna "Mes" y TransactionDate no trae fecha valida. Agrega una columna "Mes" al archivo o indica el mes cuando se te pregunte al cargarlo.');
   }
 
-  // Agrupar cancelaciones por mes usando TransactionDate
+  // Agrupar cancelaciones por mes (columna Mes, fecha valida o mes indicado)
   const cancelByMes = {};
   MONTHS.forEach(m => cancelByMes[m] = []);
   cxRows.forEach(r => {
-    const m = _toMonth(r.TransactionDate);
+    let m = r['Mes'] >= 1 ? Number(r['Mes']) : 0;
+    if (!m) { const d = _plausible(r.TransactionDate); if (d) m = d.getMonth() + 1; }
     if (cancelByMes[m]) cancelByMes[m].push(r);
   });
 
@@ -243,14 +264,17 @@ function processExcel(rows) {
     const ms = sales.filter(r => r['Mes'] === m);
     const cx = cancelByMes[m];
     const byDay = {};
+    const _dia = r => { if (r['Día'] >= 1) return r['Día']; const d = _toDate(r.TransactionDate); return (d && d.getFullYear() >= 2020) ? d.getDate() : 0; };
     ms.forEach(r => {
-      const d = r['Día'] || _toDay(r.TransactionDate);
+      const d = _dia(r);
+      if (!d) return; // sin fecha valida no se puede ubicar el dia
       if (!byDay[d]) byDay[d] = {d, tot:0, vend:0, can:0};
       byDay[d].tot  += r.STotal||0;
       byDay[d].vend += r.SQty||0;
     });
     cx.forEach(r => {
-      const d = _toDay(r.TransactionDate);
+      const d = _dia(r);
+      if (!d) return;
       if (!byDay[d]) byDay[d] = {d, tot:0, vend:0, can:0};
       byDay[d].can += r.CQty||0;
     });
@@ -261,13 +285,17 @@ function processExcel(rows) {
   MONTHS.forEach(m => {
     const ms = sales.filter(r => r['Mes']===m && r.STotal>0);
     const byH = {};
+    let conHora = 0;
     for (let h = 0; h < 24; h++) byH[h] = {h, t:0, tot:0};
     ms.forEach(r => {
+      if (!_plausible(r.TransactionDate)) return; // sin fecha-hora valida
       const h = _toHour(r.TransactionDate);
       byH[h].t   += r.SQty||0;
       byH[h].tot += r.STotal||0;
+      conHora++;
     });
-    BY_HORA[m] = Object.values(byH);
+    // solo sobreescribir si hubo datos con hora; si no, conservar lo previo
+    if (conHora > 0) BY_HORA[m] = Object.values(byH);
   });
 
   // ── PAGO data ─────────────────────────────────────────────────────────────────
