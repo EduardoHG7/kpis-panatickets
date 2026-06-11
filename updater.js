@@ -104,6 +104,11 @@ function processExcel(rows) {
   // sumarlos se concatenan (produce NaN, $0 o totales gigantes)
   const NUM_FIELDS = ['SQty','STickets','SFees','TFee','extFee2','extFee3','OrderFee','STax','STotal','CQty','CTickets','CFees','CTFee','CextFee2','CextFee3','COrderFee','CTax','CTotal','Total'];
   rows.forEach(r => { NUM_FIELDS.forEach(f => { if (f in r) r[f] = _num(r[f]); }); });
+  // Anio dominante del archivo: filas sueltas de otros anios (p.ej. preventas
+  // de diciembre del anio anterior) se descartan para no crear meses fantasma
+  const yearCount = {};
+  rows.forEach(r => { const d = _plausible(r.TransactionDate); if (d) yearCount[d.getFullYear()] = (yearCount[d.getFullYear()] || 0) + 1; });
+  const domYear = Object.keys(yearCount).length ? Number(Object.keys(yearCount).sort((a, b) => yearCount[b] - yearCount[a])[0]) : 0;
   rows.forEach(r => {
     let m = r['Mes'];
     if (typeof m === 'string') {
@@ -113,15 +118,18 @@ function processExcel(rows) {
     }
     if (!(r['Mes'] >= 1)) {
       const d = _plausible(r.TransactionDate);
-      if (d) r['Mes'] = d.getMonth() + 1;
+      if (d && (!domYear || d.getFullYear() === domYear)) r['Mes'] = d.getMonth() + 1;
     }
     r._cancel = _esCancel(r);
   });
 
   // Si hay ventas sin mes identificable (export crudo sin columna "Mes" y sin
-  // fecha valida), preguntar al usuario a que mes corresponde el archivo
+  // fecha valida), preguntar al usuario a que mes corresponde el archivo.
+  // Unas pocas filas sueltas (descuadradas o de otro anio) se omiten sin preguntar.
   const sinMes = rows.filter(r => !r._cancel && !(r['Mes'] >= 1) && ((r.STotal > 0) || (r.SQty > 0)));
-  if (sinMes.length > 0) {
+  if (sinMes.length > 0 && sinMes.length <= Math.max(100, rows.length * 0.01)) {
+    console.warn('[Updater] ' + sinMes.length + ' filas sin mes identificable omitidas');
+  } else if (sinMes.length > 0) {
     const resp = prompt(
       'El Excel tiene ' + sinMes.length.toLocaleString('es-PA') + ' filas de venta sin columna "Mes" ni fecha valida.\n\n' +
       'Si TODO el archivo corresponde a un solo mes, escribe el numero del mes (1=Enero ... 12=Diciembre).\n' +
